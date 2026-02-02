@@ -1,0 +1,122 @@
+logging {
+    level = "info"
+    format = "logfmt"
+}
+
+
+
+// PROMETHEUS
+
+prometheus.scrape "individuals_api" {
+
+    targets = discovery.relabel.containers.output
+    forward_to = [prometheus.remote_write.local.receiver]
+
+    scrape_interval = "5s"
+    scrape_timeout = "4s"
+
+}
+
+prometheus.remote_write "local" {
+    endpoint {
+        url = "http://prometheus:9090/api/v1/write"
+        name = "prometheus-local"
+    }
+}
+
+
+// LOKI
+
+loki.source.docker "containers" {
+    host = "tcp://docker-socket-proxy:2375"
+    targets = discovery.relabel.containers.output
+    forward_to = [loki.process.parse_json.receiver]
+}
+
+loki.process "parse_json" {
+    forward_to = [loki.write.local.receiver]
+
+    stage.json {
+        expressions = {
+            level = "level",
+        }
+    }
+
+    stage.labels {
+        values = {
+            level = "level",
+        }
+    }
+}
+
+loki.write "local" {
+    endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+    }
+}
+
+// TEMPO
+
+otelcol.receiver.otlp "local" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.exporter.otlp.local.input]
+  }
+}
+
+otelcol.exporter.otlp "local" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+
+
+// DISCOVERY DOCKER
+discovery.docker "containers" {
+    host = "tcp://docker-socket-proxy:2375"
+    refresh_interval = "5s"
+}
+
+
+discovery.relabel "containers" {
+    targets = discovery.docker.containers.targets
+
+    rule {
+        source_labels = ["__meta_docker_container_label_monitoring_enabled"]
+        regex = "true"
+        action = "keep"
+    }
+
+    rule {
+        source_labels = ["__meta_docker_container_label_monitoring_port"]
+        target_label = "__tmp_port"
+    }
+    rule {
+        source_labels = ["__meta_docker_network_ip", "__tmp_port"]
+        separator = ":"
+        target_label = "__address__"
+    }
+
+    rule {
+        source_labels = ["__meta_docker_container_label_monitoring_path"]
+        regex = "(.+)"
+        target_label = "__metrics_path__"
+    }
+
+    rule {
+        source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label = "service"
+    }
+
+}

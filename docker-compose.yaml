@@ -1,0 +1,184 @@
+services:
+
+  individuals-api:
+    image: individuals-api:4.0.0
+    container_name: individuals-api
+    labels:
+      - "monitoring.enabled=true"
+      - "monitoring.port=8080"
+      - "monitoring.path=/actuator/prometheus"
+    ports:
+      - "8081:8080"
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: payment-system
+      KEYCLOAK_CLIENT_ID: individuals-api
+      KEYCLOAK_CLIENT_SECRET: 8wb8HtX44VRUfquzs08Fk1dDH74d9vKc
+      OTLP_TRACING_ENDPOINT: http://alloy:4317
+      OTLP_TRACING_TRANSPORT: grpc
+    depends_on:
+      keycloak:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment-system-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    container_name: individuals-keycloak
+    command: start-dev --import-realm
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_HEALTH_ENABLED: true
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    networks:
+      - payment-system-network
+
+  keycloak-postgres:
+    image: postgres:17
+    container_name: keycloak-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - keycloak_pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment-system-network
+
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: docker-socket-proxy
+    environment:
+      - CONTAINERS=1
+      - NETWORKS=1
+      - SERVICES=1
+      - TASKS=1
+      - POST=0
+      - DELETE=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "2375:2375"
+    networks:
+      - payment-system-network
+
+  alloy:
+    image: grafana/alloy:v1.12.2
+    container_name: alloy
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "12345:12345"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy
+      - alloy-data:/var/lib/alloy/data
+    depends_on:
+      docker-socket-proxy:
+        condition: service_started
+    networks:
+      - payment-system-network
+
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-remote-write-receiver'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    depends_on:
+      alloy:
+        condition: service_started
+    networks:
+      - payment-system-network
+
+  loki:
+    image: grafana/loki:3.6.4
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command:
+      - -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./loki/config.yaml:/etc/loki/config.yaml
+      - loki-data:/loki
+    depends_on:
+      alloy:
+        condition: service_started
+    networks:
+      - payment-system-network
+
+  tempo:
+    image: grafana/tempo:2.10.0
+    container_name: tempo
+    command:
+      - '-config.file=/etc/tempo/config.yaml'
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./tempo/config.yaml:/etc/tempo/config.yaml
+      - tempo-data:/var/tempo
+    networks:
+      - payment-system-network
+
+
+  grafana:
+    image: grafana/grafana:12.3
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      loki:
+        condition: service_started
+      prometheus:
+        condition: service_started
+    networks:
+      - payment-system-network
+
+volumes:
+  keycloak_pg-data:
+  alloy-data:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  grafana-data:
+
+networks:
+  payment-system-network:
+    driver: bridge
