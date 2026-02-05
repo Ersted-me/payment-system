@@ -15,32 +15,46 @@ public class UserService {
 
     private final KeycloakClient keycloakClient;
     private final TokenService tokenService;
+    private final UserMetrics userMetrics;
 
 
     public Mono<TokenResponse> login(UserLoginRequest userLoginRequest) {
-        return tokenService.login(userLoginRequest.getEmail(), userLoginRequest.getPassword());
+        return tokenService.login(userLoginRequest.getEmail(), userLoginRequest.getPassword())
+                .doOnSuccess(_ -> userMetrics.recordLoginSuccess())
+                .doOnError(_ -> userMetrics.recordLoginFailure());
     }
 
     public Mono<TokenResponse> refreshToken(TokenRefreshRequest tokenRefreshRequest) {
-        return tokenService.refreshToken(tokenRefreshRequest.getRefreshToken());
+        return tokenService.refreshToken(tokenRefreshRequest.getRefreshToken())
+                .doOnSuccess(_ -> userMetrics.recordRefreshTokenSuccess())
+                .doOnError(_ -> userMetrics.recordRefreshTokenFailure());
     }
 
 
     public Mono<TokenResponse> register(UserRegistrationRequest request) {
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
+            userMetrics.recordRegisterFailure();
             return Mono.error(new ValidationException("Passwords do not match"));
         }
 
         return keycloakClient.createUser(request.getEmail(), request.getPassword())
                 .doOnSubscribe(_ -> log.info("User registration: {}", request.getEmail()))
                 .then(Mono.defer(() -> tokenService.login(request.getEmail(), request.getPassword())))
-                .doOnSuccess(_ -> log.info("User registered successfully: {}", request.getEmail()))
-                .doOnError(e -> log.warn("Registration failed for user: {}", request.getEmail()));
+                .doOnSuccess(_ -> {
+                    userMetrics.recordRegisterSuccess();
+                    log.info("User registered successfully: {}", request.getEmail());
+                })
+                .doOnError(_ -> {
+                    userMetrics.recordRegisterFailure();
+                    log.warn("Registration failed for user: {}", request.getEmail());
+                });
     }
 
     public Mono<UserInfoResponse> fetchUserInfo(String token) {
-        return tokenService.getUserInfo(token);
+        return tokenService.getUserInfo(token)
+                .doOnSuccess(_ -> userMetrics.recordGetInfoSuccess())
+                .doOnError(_ -> userMetrics.recordGetInfoFailure());
     }
 
 }

@@ -25,6 +25,9 @@ class UserServiceTest {
     @Mock
     private TokenService tokenService;
 
+    @Mock
+    private UserMetrics userMetrics;
+
     @InjectMocks
     private UserService userService;
 
