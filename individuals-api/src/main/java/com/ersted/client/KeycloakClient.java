@@ -4,6 +4,8 @@ import com.ersted.dto.CreateKeycloakUserRequest;
 import com.ersted.dto.TokenResponse;
 import com.ersted.exception.hendler.KeycloakErrorHandler;
 import com.ersted.provider.KeycloakAdminTokenProvider;
+import io.micrometer.observation.annotation.Observed;
+import io.micrometer.tracing.annotation.NewSpan;
 import io.netty.handler.timeout.TimeoutException;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -51,7 +53,7 @@ public class KeycloakClient {
     private final KeycloakErrorHandler errorHandler;
     private final KeycloakAdminTokenProvider adminTokenProvider;
 
-
+    @NewSpan("keycloak-request-token")
     public Mono<TokenResponse> requestToken(@NotNull @Email String email, @NotNull String password) {
         var formData = buildPasswordGrantFormData(email, password);
         return executeTokenRequest(formData)
@@ -59,6 +61,7 @@ public class KeycloakClient {
                 .doOnSuccess(_ -> log.info("User authenticated: {}", email));
     }
 
+    @NewSpan("keycloak-refresh-token")
     public Mono<TokenResponse> refreshToken(@NotNull String refreshToken) {
         var formData = buildRefreshTokenGrantFormData(refreshToken);
         return executeTokenRequest(formData)
@@ -66,6 +69,7 @@ public class KeycloakClient {
                 .doOnSuccess(_ -> log.info("Token refreshed successfully"));
     }
 
+    @NewSpan("keycloak-create-user")
     public Mono<Void> createUser(@NotNull @Email String email, @NotNull String password) {
         return adminToken()
                 .doOnSubscribe(_ -> log.info("Creating user: {}", email))

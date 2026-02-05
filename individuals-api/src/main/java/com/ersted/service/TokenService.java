@@ -4,6 +4,8 @@ import com.ersted.client.KeycloakClient;
 import com.ersted.dto.TokenResponse;
 import com.ersted.dto.UserInfoResponse;
 import com.ersted.utils.DateTimeUtils;
+import io.micrometer.tracing.annotation.ContinueSpan;
+import io.micrometer.tracing.annotation.SpanTag;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -23,16 +25,19 @@ public class TokenService {
     private final KeycloakClient keycloakClient;
     private final ReactiveJwtDecoder jwtDecoder;
 
+    @ContinueSpan
     public Mono<TokenResponse> login(@NotNull @Email String email, @NotNull String password) {
         return keycloakClient.requestToken(email, password)
                 .doOnSuccess(_ -> log.info("User logged in: {}", email))
                 .doOnError(e -> log.warn("Login failed for user: {}", email));
     }
 
+    @ContinueSpan
     public Mono<TokenResponse> refreshToken(String refreshToken) {
         return keycloakClient.refreshToken(refreshToken);
     }
 
+    @ContinueSpan
     public Mono<UserInfoResponse> getUserInfo(@NotNull String token) {
         String cleanToken = token.startsWith("Bearer ")
                 ? token.substring(7)

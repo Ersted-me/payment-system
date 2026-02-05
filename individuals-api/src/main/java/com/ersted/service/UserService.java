@@ -3,6 +3,7 @@ package com.ersted.service;
 import com.ersted.client.KeycloakClient;
 import com.ersted.dto.*;
 import com.ersted.exception.ValidationException;
+import io.micrometer.tracing.annotation.NewSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,19 +19,21 @@ public class UserService {
     private final UserMetrics userMetrics;
 
 
+    @NewSpan("user-login")
     public Mono<TokenResponse> login(UserLoginRequest userLoginRequest) {
         return tokenService.login(userLoginRequest.getEmail(), userLoginRequest.getPassword())
                 .doOnSuccess(_ -> userMetrics.recordLoginSuccess())
                 .doOnError(_ -> userMetrics.recordLoginFailure());
     }
 
+    @NewSpan("user-refresh-token")
     public Mono<TokenResponse> refreshToken(TokenRefreshRequest tokenRefreshRequest) {
         return tokenService.refreshToken(tokenRefreshRequest.getRefreshToken())
                 .doOnSuccess(_ -> userMetrics.recordRefreshTokenSuccess())
                 .doOnError(_ -> userMetrics.recordRefreshTokenFailure());
     }
 
-
+    @NewSpan("user-register")
     public Mono<TokenResponse> register(UserRegistrationRequest request) {
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
@@ -51,6 +54,7 @@ public class UserService {
                 });
     }
 
+    @NewSpan("user-fetch-user-info")
     public Mono<UserInfoResponse> fetchUserInfo(String token) {
         return tokenService.getUserInfo(token)
                 .doOnSuccess(_ -> userMetrics.recordGetInfoSuccess())
