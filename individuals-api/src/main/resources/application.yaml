@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 8080
 
 keycloak:
   url: ${KEYCLOAK_URL:http://localhost:8080}
