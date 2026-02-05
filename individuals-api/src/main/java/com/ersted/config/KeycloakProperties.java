@@ -1,10 +1,8 @@
 package com.ersted.config;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -12,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 @NoArgsConstructor
 @Getter
 @Setter
+@Builder
 @Validated
 @ConfigurationProperties(prefix = "keycloak")
 public class KeycloakProperties {
@@ -27,6 +26,39 @@ public class KeycloakProperties {
 
     @NotBlank
     private String clientSecret;
+
+    private AdminTokenProperties adminToken;
+
+    private RequestsRetryProperties requestsRetry;
+
+    @Getter
+    @Setter
+    @Builder
+    public static class AdminTokenProperties {
+
+        @Min(value = 30)
+        private int ttlSeconds;
+
+        @Min(value = 15)
+        private long refreshMarginSeconds;
+
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    public static class RequestsRetryProperties {
+
+        @Min(value = 0)
+        private int attempts;
+
+        @Min(value = 0)
+        private int delaySeconds;
+
+        @Min(value = 0)
+        private int requestTimeoutSeconds;
+
+    }
 
 
     public String getTokenUri() {

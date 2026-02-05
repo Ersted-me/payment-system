@@ -1,6 +1,7 @@
 package com.ersted.provider;
 
 import com.ersted.dto.TokenResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -10,10 +11,11 @@ import java.util.function.Supplier;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class KeycloakAdminTokenProvider {
 
-    private static final int DEFAULT_TOKEN_TTL_SECONDS = 300;
-    private static final long TOKEN_REFRESH_MARGIN_SECONDS = 60;
+    private final int DEFAULT_TOKEN_TTL_SECONDS;
+    private final long TOKEN_REFRESH_MARGIN_SECONDS;
 
     private volatile TokenResponse cachedToken;
     private volatile Instant expiresAt;
@@ -34,12 +36,6 @@ public class KeycloakAdminTokenProvider {
         return cachedToken != null
                 && expiresAt != null
                 && Instant.now().isBefore(expiresAt);
-    }
-
-    public void invalidate() {
-        log.info("Admin token cache invalidated");
-        this.cachedToken = null;
-        this.expiresAt = null;
     }
 
     private void cacheToken(TokenResponse token) {

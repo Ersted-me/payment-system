@@ -25,6 +25,7 @@ import reactor.test.StepVerifier;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,15 +54,38 @@ class KeycloakClientTest {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
 
-        properties = new KeycloakProperties();
-        properties.setUrl(mockWebServer.url("/").toString());
-        properties.setClientId("client-id");
-        properties.setClientSecret("client-secret");
-        properties.setRealm("client-realm");
+        properties = KeycloakProperties.builder()
+                .url(mockWebServer.url("/").toString())
+                .clientId("client-id")
+                .clientSecret("client-secret")
+                .realm("client-realm")
+                .adminToken(KeycloakProperties.AdminTokenProperties.builder()
+                        .ttlSeconds(300)
+                        .refreshMarginSeconds(60)
+                        .build()
+                )
+                .requestsRetry(KeycloakProperties.RequestsRetryProperties.builder()
+                        .attempts(3)
+                        .delaySeconds(1)
+                        .requestTimeoutSeconds(10)
+                        .build())
+                .build();
+
 
         WebClient webClient = WebClient.builder().build();
 
-        keycloakClient = new KeycloakClient(webClient, properties, errorHandler, provider);
+        keycloakClient = new KeycloakClient(
+                properties.getRequestsRetry().getAttempts(),
+                Duration.ofSeconds(properties.getRequestsRetry().getDelaySeconds()),
+                Duration.ofSeconds(properties.getRequestsRetry().getRequestTimeoutSeconds()),
+                properties.getClientId(),
+                properties.getClientSecret(),
+                properties.getAdminUsersUri(),
+                properties.getTokenUri(),
+                webClient,
+                errorHandler,
+                provider
+        );
     }
 
     @AfterEach
@@ -222,11 +246,11 @@ class KeycloakClientTest {
                 .setResponseCode(401)
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBody("""
-                {
-                  "error": "invalid_client",
-                  "error_description": "Invalid client credentials"
-                }
-                """));
+                        {
+                          "error": "invalid_client",
+                          "error_description": "Invalid client credentials"
+                        }
+                        """));
 
         // When & Then
         when(provider.getToken(any())).thenAnswer(invocation -> {
@@ -252,20 +276,20 @@ class KeycloakClientTest {
                 .setResponseCode(200)
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBody("""
-                {
-                  "access_token": "admin-token",
-                  "expires_in": 300
-                }
-                """));
+                        {
+                          "access_token": "admin-token",
+                          "expires_in": 300
+                        }
+                        """));
 
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(409)
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBody("""
-                {
-                  "errorMessage": "User exists with same email"
-                }
-                """));
+                        {
+                          "errorMessage": "User exists with same email"
+                        }
+                        """));
 
         // When & Then
         when(provider.getToken(any())).thenAnswer(invocation -> {

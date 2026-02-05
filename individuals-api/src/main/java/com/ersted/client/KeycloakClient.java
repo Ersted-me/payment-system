@@ -1,6 +1,5 @@
 package com.ersted.client;
 
-import com.ersted.config.KeycloakProperties;
 import com.ersted.dto.CreateKeycloakUserRequest;
 import com.ersted.dto.TokenResponse;
 import com.ersted.exception.hendler.KeycloakErrorHandler;
@@ -11,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -37,12 +37,17 @@ public class KeycloakClient {
     private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
     private static final String SCOPE_OPENID = "openid email profile";
 
-    private static final int RETRY_ATTEMPTS = 3;
-    private static final Duration RETRY_DELAY = Duration.ofSeconds(1);
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+    private final int RETRY_ATTEMPTS;
+    private final Duration RETRY_DELAY;
+    private final Duration REQUEST_TIMEOUT;
+
+    private final String KEYCLOAK_CLIENT_ID;
+    private final String KEYCLOAK_CLIENT_SECRET;
+
+    private final String ADMIN_USERS_URI;
+    private final String TOKEN_URI;
 
     private final WebClient keycloakWebClient;
-    private final KeycloakProperties properties;
     private final KeycloakErrorHandler errorHandler;
     private final KeycloakAdminTokenProvider adminTokenProvider;
 
@@ -88,7 +93,7 @@ public class KeycloakClient {
         return this.retrieve(
                 keycloakWebClient
                         .post()
-                        .uri(properties.getAdminUsersUri())
+                        .uri(ADMIN_USERS_URI)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(request),
@@ -99,7 +104,7 @@ public class KeycloakClient {
         return this.retrieve(
                 keycloakWebClient
                         .post()
-                        .uri(properties.getTokenUri())
+                        .uri(TOKEN_URI)
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .bodyValue(formData),
                 TokenResponse.class
@@ -109,16 +114,16 @@ public class KeycloakClient {
     private MultiValueMap<String, String> buildClientCredentialsGrantFormData() {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", GRANT_TYPE_CLIENT_CREDENTIALS);
-        formData.add("client_id", properties.getClientId());
-        formData.add("client_secret", properties.getClientSecret());
+        formData.add("client_id", KEYCLOAK_CLIENT_ID);
+        formData.add("client_secret", KEYCLOAK_CLIENT_SECRET);
         return formData;
     }
 
     private MultiValueMap<String, String> buildPasswordGrantFormData(String username, String password) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", GRANT_TYPE_PASSWORD);
-        formData.add("client_id", properties.getClientId());
-        formData.add("client_secret", properties.getClientSecret());
+        formData.add("client_id", KEYCLOAK_CLIENT_ID);
+        formData.add("client_secret", KEYCLOAK_CLIENT_SECRET);
         formData.add("username", username);
         formData.add("password", password);
         formData.add("scope", SCOPE_OPENID);
@@ -128,8 +133,8 @@ public class KeycloakClient {
     private MultiValueMap<String, String> buildRefreshTokenGrantFormData(String refreshToken) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", GRANT_TYPE_REFRESH_TOKEN);
-        formData.add("client_id", properties.getClientId());
-        formData.add("client_secret", properties.getClientSecret());
+        formData.add("client_id", KEYCLOAK_CLIENT_ID);
+        formData.add("client_secret", KEYCLOAK_CLIENT_SECRET);
         formData.add("refresh_token", refreshToken);
         return formData;
     }

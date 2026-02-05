@@ -1,11 +1,20 @@
 server:
-  port: 8080
+  port: 8081
 
 keycloak:
   url: ${KEYCLOAK_URL:http://localhost:8080}
   realm: ${KEYCLOAK_REALM:payment-system}
   client-id: ${KEYCLOAK_CLIENT_ID:individuals-api}
   client-secret: ${KEYCLOAK_CLIENT_SECRET}
+
+  admin-token:
+    ttl-seconds: ${KEYCLOAK_ADMIN_TOKEN_TTL_SECONDS:300}
+    refresh-margin-seconds: ${KEYCLOAK_ADMIN_TOKEN_REFRESH_MARGIN_SECONDS:60}
+
+  requests-retry:
+    attempts: ${KEYCLOAK_REQUESTS_RETRY_ATTEMPTS:3}
+    delay-seconds: ${KEYCLOAK_REQUESTS_DELAY_SECONDS:1}
+    request-timeout-seconds: ${KEYCLOAK_REQUESTS_RETRY_ATTEMPTS:10}
 
 spring:
   main:
