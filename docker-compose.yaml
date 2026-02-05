@@ -4,7 +4,6 @@ services:
     build:
       context: ./individuals-api
       dockerfile: Dockerfile
-    image: individuals-api:4.0.0
     container_name: individuals-api
     labels:
       - "monitoring.enabled=true"
