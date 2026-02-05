@@ -27,6 +27,7 @@ dependencies {
 	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	implementation ("org.springframework.boot:spring-boot-starter-oauth2-client")
 	implementation ("org.springframework.boot:spring-boot-starter-validation")
+	implementation("org.springframework.boot:spring-boot-starter-aop")
 
 //	Observability
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -34,8 +35,9 @@ dependencies {
 	implementation("net.logstash.logback:logstash-logback-encoder:9.0")
 	implementation("io.micrometer:micrometer-tracing-bridge-otel")
 	implementation("io.opentelemetry:opentelemetry-exporter-otlp")
+	implementation("io.micrometer:context-propagation")
+	implementation("io.projectreactor:reactor-core-micrometer")
 	runtimeOnly("io.grpc:grpc-netty-shaded:1.78.0")
-
 
 //	OpenApi
 	implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9")

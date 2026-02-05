@@ -37,6 +37,8 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${keycloak.url}/realms/${keycloak.realm}
+  reactor:
+    context-propagation: auto
 
 management:
   tracing:
@@ -59,3 +61,7 @@ management:
   endpoint:
     prometheus:
       access: read_only
+
+  observations:
+    annotations:
+      enabled: true
