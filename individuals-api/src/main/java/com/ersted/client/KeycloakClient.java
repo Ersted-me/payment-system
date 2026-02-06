@@ -6,8 +6,6 @@ import com.ersted.exception.KeycloakClientServiceUnavailableException;
 import com.ersted.exception.handler.KeycloakErrorHandler;
 import com.ersted.provider.KeycloakAdminTokenProvider;
 import io.netty.handler.timeout.TimeoutException;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -15,7 +13,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -24,7 +21,6 @@ import java.net.ConnectException;
 import java.util.List;
 
 @Slf4j
-@Validated
 @RequiredArgsConstructor
 public class KeycloakClient {
 
@@ -41,21 +37,21 @@ public class KeycloakClient {
     private final KeycloakAdminTokenProvider adminTokenProvider;
 
 
-    public Mono<TokenResponse> requestToken(@NotNull @Email String email, @NotNull String password) {
+    public Mono<TokenResponse> requestToken(String email, String password) {
         var formData = buildPasswordGrantFormData(email, password);
         return executeTokenRequest(formData)
                 .doOnSubscribe(_ -> log.info("Authenticating user: {}", email))
                 .doOnSuccess(_ -> log.info("User authenticated: {}", email));
     }
 
-    public Mono<TokenResponse> refreshToken(@NotNull String refreshToken) {
+    public Mono<TokenResponse> refreshToken(String refreshToken) {
         var formData = buildRefreshTokenGrantFormData(refreshToken);
         return executeTokenRequest(formData)
                 .doOnSubscribe(_ -> log.debug("Refreshing token: ...{}", StringUtils.right(refreshToken, 5)))
                 .doOnSuccess(_ -> log.info("Token refreshed successfully"));
     }
 
-    public Mono<Void> createUser(@NotNull @Email String email, @NotNull String password) {
+    public Mono<Void> createUser(String email, String password) {
         return adminToken()
                 .doOnSubscribe(_ -> log.info("Creating user: {}", email))
                 .flatMap(token -> executeCreateUserRequest(email, password, token.getAccessToken()))
@@ -72,10 +68,7 @@ public class KeycloakClient {
                 .doOnSuccess(_ -> log.info("Admin token obtained"));
     }
 
-    private Mono<Void> executeCreateUserRequest(
-            @NotNull @Email String email,
-            @NotNull String password,
-            @NotNull String accessToken) {
+    private Mono<Void> executeCreateUserRequest(String email, String password, String accessToken) {
 
         var request = buildCreateUserRequest(email, password);
 
@@ -143,6 +136,7 @@ public class KeycloakClient {
     private boolean isRetryableError(Throwable throwable) {
         return throwable instanceof KeycloakClientServiceUnavailableException ||
                 throwable instanceof TimeoutException ||
+                throwable instanceof java.util.concurrent.TimeoutException ||
                 throwable instanceof ConnectException;
     }
 
