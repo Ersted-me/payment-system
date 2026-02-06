@@ -2,20 +2,17 @@ package com.ersted.client;
 
 import com.ersted.dto.CreateKeycloakUserRequest;
 import com.ersted.dto.TokenResponse;
-import com.ersted.exception.hendler.KeycloakErrorHandler;
+import com.ersted.exception.KeycloakClientServiceUnavailableException;
+import com.ersted.exception.handler.KeycloakErrorHandler;
 import com.ersted.provider.KeycloakAdminTokenProvider;
-import io.micrometer.observation.annotation.Observed;
-import io.micrometer.tracing.annotation.NewSpan;
 import io.netty.handler.timeout.TimeoutException;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.annotation.Validated;
@@ -23,37 +20,27 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-import javax.naming.ServiceUnavailableException;
 import java.net.ConnectException;
-import java.time.Duration;
 import java.util.List;
 
 @Slf4j
 @Validated
-@Component
 @RequiredArgsConstructor
 public class KeycloakClient {
+
+    private static final String BEARER_TOKEN_PREFIX = "Bearer ";
 
     private static final String GRANT_TYPE_PASSWORD = "password";
     private static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
     private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
     private static final String SCOPE_OPENID = "openid email profile";
 
-    private final int RETRY_ATTEMPTS;
-    private final Duration RETRY_DELAY;
-    private final Duration REQUEST_TIMEOUT;
-
-    private final String KEYCLOAK_CLIENT_ID;
-    private final String KEYCLOAK_CLIENT_SECRET;
-
-    private final String ADMIN_USERS_URI;
-    private final String TOKEN_URI;
-
     private final WebClient keycloakWebClient;
+    private final KeycloakClientSettings settings;
     private final KeycloakErrorHandler errorHandler;
     private final KeycloakAdminTokenProvider adminTokenProvider;
 
-    @NewSpan("keycloak-request-token")
+
     public Mono<TokenResponse> requestToken(@NotNull @Email String email, @NotNull String password) {
         var formData = buildPasswordGrantFormData(email, password);
         return executeTokenRequest(formData)
@@ -61,7 +48,6 @@ public class KeycloakClient {
                 .doOnSuccess(_ -> log.info("User authenticated: {}", email));
     }
 
-    @NewSpan("keycloak-refresh-token")
     public Mono<TokenResponse> refreshToken(@NotNull String refreshToken) {
         var formData = buildRefreshTokenGrantFormData(refreshToken);
         return executeTokenRequest(formData)
@@ -69,7 +55,6 @@ public class KeycloakClient {
                 .doOnSuccess(_ -> log.info("Token refreshed successfully"));
     }
 
-    @NewSpan("keycloak-create-user")
     public Mono<Void> createUser(@NotNull @Email String email, @NotNull String password) {
         return adminToken()
                 .doOnSubscribe(_ -> log.info("Creating user: {}", email))
@@ -97,8 +82,8 @@ public class KeycloakClient {
         return this.retrieve(
                 keycloakWebClient
                         .post()
-                        .uri(ADMIN_USERS_URI)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                        .uri(settings.userRegistrationUrl())
+                        .header(HttpHeaders.AUTHORIZATION, BEARER_TOKEN_PREFIX + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(request),
                 Void.class);
@@ -108,7 +93,7 @@ public class KeycloakClient {
         return this.retrieve(
                 keycloakWebClient
                         .post()
-                        .uri(TOKEN_URI)
+                        .uri(settings.tokenUrl())
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .bodyValue(formData),
                 TokenResponse.class
@@ -118,16 +103,16 @@ public class KeycloakClient {
     private MultiValueMap<String, String> buildClientCredentialsGrantFormData() {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", GRANT_TYPE_CLIENT_CREDENTIALS);
-        formData.add("client_id", KEYCLOAK_CLIENT_ID);
-        formData.add("client_secret", KEYCLOAK_CLIENT_SECRET);
+        formData.add("client_id", settings.credentials().clientId());
+        formData.add("client_secret", settings.credentials().clientSecret());
         return formData;
     }
 
     private MultiValueMap<String, String> buildPasswordGrantFormData(String username, String password) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", GRANT_TYPE_PASSWORD);
-        formData.add("client_id", KEYCLOAK_CLIENT_ID);
-        formData.add("client_secret", KEYCLOAK_CLIENT_SECRET);
+        formData.add("client_id", settings.credentials().clientId());
+        formData.add("client_secret", settings.credentials().clientSecret());
         formData.add("username", username);
         formData.add("password", password);
         formData.add("scope", SCOPE_OPENID);
@@ -137,8 +122,8 @@ public class KeycloakClient {
     private MultiValueMap<String, String> buildRefreshTokenGrantFormData(String refreshToken) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", GRANT_TYPE_REFRESH_TOKEN);
-        formData.add("client_id", KEYCLOAK_CLIENT_ID);
-        formData.add("client_secret", KEYCLOAK_CLIENT_SECRET);
+        formData.add("client_id", settings.credentials().clientId());
+        formData.add("client_secret", settings.credentials().clientSecret());
         formData.add("refresh_token", refreshToken);
         return formData;
     }
@@ -147,8 +132,8 @@ public class KeycloakClient {
         return spec.retrieve()
                 .bodyToMono(responseType)
                 .transform(errorHandler::handle)
-                .timeout(REQUEST_TIMEOUT)
-                .retryWhen(Retry.backoff(RETRY_ATTEMPTS, RETRY_DELAY)
+                .timeout(settings.retry().timeout())
+                .retryWhen(Retry.backoff(settings.retry().attempts(), settings.retry().delay())
                         .filter(this::isRetryableError)
                         .doBeforeRetry(signal ->
                                 log.warn("Retrying request, attempt: {}", signal.totalRetries() + 1))
@@ -156,7 +141,7 @@ public class KeycloakClient {
     }
 
     private boolean isRetryableError(Throwable throwable) {
-        return throwable instanceof ServiceUnavailableException ||
+        return throwable instanceof KeycloakClientServiceUnavailableException ||
                 throwable instanceof TimeoutException ||
                 throwable instanceof ConnectException;
     }

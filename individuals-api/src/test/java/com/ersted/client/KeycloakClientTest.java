@@ -1,91 +1,56 @@
 package com.ersted.client;
 
-import com.ersted.config.KeycloakProperties;
-import com.ersted.dto.TokenResponse;
 import com.ersted.exception.InvalidCredentialsException;
 import com.ersted.exception.KeycloakClientConflictException;
-import com.ersted.exception.hendler.KeycloakErrorHandler;
+import com.ersted.exception.handler.KeycloakErrorHandler;
 import com.ersted.provider.KeycloakAdminTokenProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.MediaType;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
-
-@ExtendWith(MockitoExtension.class)
 class KeycloakClientTest {
+
+    private static final String CLIENT_ID = "test-client-id";
+    private static final String CLIENT_SECRET = "test-client-secret";
 
     private MockWebServer mockWebServer;
     private KeycloakClient keycloakClient;
-
-    @Mock
-    private KeycloakErrorHandler errorHandler;
-
-    @Mock
-    private KeycloakAdminTokenProvider provider;
-
-    private KeycloakProperties properties;
-
 
     @BeforeEach
     void setUp() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
 
-        properties = KeycloakProperties.builder()
-                .url(mockWebServer.url("/").toString())
-                .clientId("client-id")
-                .clientSecret("client-secret")
-                .realm("client-realm")
-                .adminToken(KeycloakProperties.AdminTokenProperties.builder()
-                        .ttlSeconds(300)
-                        .refreshMarginSeconds(60)
-                        .build()
-                )
-                .requestsRetry(KeycloakProperties.RequestsRetryProperties.builder()
-                        .attempts(3)
-                        .delaySeconds(1)
-                        .requestTimeoutSeconds(10)
-                        .build())
-                .build();
+        String baseUrl = mockWebServer.url("").toString().replaceAll("/$", "");
 
-
-        WebClient webClient = WebClient.builder().build();
-
-        keycloakClient = new KeycloakClient(
-                properties.getRequestsRetry().getAttempts(),
-                Duration.ofSeconds(properties.getRequestsRetry().getDelaySeconds()),
-                Duration.ofSeconds(properties.getRequestsRetry().getRequestTimeoutSeconds()),
-                properties.getClientId(),
-                properties.getClientSecret(),
-                properties.getAdminUsersUri(),
-                properties.getTokenUri(),
-                webClient,
-                errorHandler,
-                provider
+        var settings = new KeycloakClientSettings(
+                new KeycloakClientSettings.ClientCredentials(CLIENT_ID, CLIENT_SECRET),
+                baseUrl + "/realms/test-realm/protocol/openid-connect/token",
+                baseUrl + "/admin/realms/test-realm/users",
+                new KeycloakClientSettings.RetrySettings(0, Duration.ZERO, Duration.ofSeconds(5))
         );
+
+        var webClient = WebClient.create();
+        var errorHandler = new KeycloakErrorHandler(new ObjectMapper());
+        var tokenProvider = new KeycloakAdminTokenProvider(60, 300);
+
+        keycloakClient = new KeycloakClient(webClient, settings, errorHandler, tokenProvider);
     }
 
     @AfterEach
@@ -93,30 +58,23 @@ class KeycloakClientTest {
         mockWebServer.shutdown();
     }
 
-
     @Test
     void shouldRequestTokenSuccessfully() throws InterruptedException {
         // Given
-        String responseBody = """
-                {
-                  "access_token": "access-token",
-                  "refresh_token": "refresh-token",
-                  "expires_in": 300,
-                  "token_type": "Bearer"
-                }
-                """;
-
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(responseBody)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-        );
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setBody("""
+                        {
+                          "access_token": "access-token",
+                          "refresh_token": "refresh-token",
+                          "expires_in": 300,
+                          "token_type": "Bearer"
+                        }
+                        """));
 
-        // When
-        when(errorHandler.handle(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
+        // When & Then
         StepVerifier.create(keycloakClient.requestToken("test@test.com", "password"))
-                // Then
                 .assertNext(response -> {
                     assertEquals("access-token", response.getAccessToken());
                     assertEquals("refresh-token", response.getRefreshToken());
@@ -131,37 +89,30 @@ class KeycloakClientTest {
 
         assertEquals("POST", request.getMethod());
         assertTrue(requestBody.contains("grant_type=password"));
-        assertTrue(requestBody.contains("client_id=" + properties.getClientId()));
-        assertTrue(requestBody.contains("client_secret=" + properties.getClientSecret()));
+        assertTrue(requestBody.contains("client_id=" + CLIENT_ID));
+        assertTrue(requestBody.contains("client_secret=" + CLIENT_SECRET));
         assertTrue(requestBody.contains("username=test@test.com"));
         assertTrue(requestBody.contains("password=password"));
         assertTrue(requestBody.contains("scope=openid email profile"));
     }
 
-
     @Test
     void shouldRefreshTokenSuccessfully() throws InterruptedException {
         // Given
-        String responseBody = """
-                {
-                  "access_token": "new-access-token",
-                  "refresh_token": "new-refresh-token",
-                  "expires_in": 300,
-                  "token_type": "Bearer"
-                }
-                """;
-
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(responseBody)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-        );
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setBody("""
+                        {
+                          "access_token": "new-access-token",
+                          "refresh_token": "new-refresh-token",
+                          "expires_in": 300,
+                          "token_type": "Bearer"
+                        }
+                        """));
 
-        // When
-        when(errorHandler.handle(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
+        // When & Then
         StepVerifier.create(keycloakClient.refreshToken("old-refresh-token"))
-                // Then
                 .assertNext(response -> {
                     assertEquals("new-access-token", response.getAccessToken());
                     assertEquals("new-refresh-token", response.getRefreshToken());
@@ -176,47 +127,34 @@ class KeycloakClientTest {
 
         assertEquals("POST", request.getMethod());
         assertTrue(requestBody.contains("grant_type=refresh_token"));
-        assertTrue(requestBody.contains("client_id=" + properties.getClientId()));
-        assertTrue(requestBody.contains("client_secret=" + properties.getClientSecret()));
+        assertTrue(requestBody.contains("client_id=" + CLIENT_ID));
+        assertTrue(requestBody.contains("client_secret=" + CLIENT_SECRET));
         assertTrue(requestBody.contains("refresh_token=old-refresh-token"));
     }
 
     @Test
     void shouldCreateUserSuccessfully() throws InterruptedException {
-        // Given
-        String responseAdminToken = """
-                {
-                  "access_token": "admin-access-token",
-                  "expires_in": 300,
-                  "token_type": "Bearer"
-                }
-                """;
-
+        // Given - admin token response
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(responseAdminToken)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-        );
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setBody("""
+                        {
+                          "access_token": "admin-access-token",
+                          "expires_in": 300,
+                          "token_type": "Bearer"
+                        }
+                        """));
 
+        // Given - create user response
         mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(201)
-                .setHeader(HttpHeaders.LOCATION,
-                        properties.getUrl() + "/admin/realms/" + properties.getRealm() + "/users/" + "some-uuid-id")
-        );
+                .setResponseCode(201));
 
-        // When
-        when(errorHandler.handle(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        when(provider.getToken(any())).thenAnswer(invocation -> {
-            Supplier<Mono<TokenResponse>> supplier = invocation.getArgument(0);
-            return supplier.get();
-        });
-
+        // When & Then
         StepVerifier.create(keycloakClient.createUser("test@test.com", "password"))
                 .verifyComplete();
 
-
-        // Verify request
+        // Verify requests
         assertEquals(2, mockWebServer.getRequestCount());
 
         // Admin token request
@@ -225,12 +163,12 @@ class KeycloakClientTest {
 
         assertEquals("POST", adminTokenRequest.getMethod());
         assertTrue(adminTokenRequestBody.contains("grant_type=client_credentials"));
-        assertTrue(adminTokenRequestBody.contains("client_id=" + properties.getClientId()));
-        assertTrue(adminTokenRequestBody.contains("client_secret=" + properties.getClientSecret()));
+        assertTrue(adminTokenRequestBody.contains("client_id=" + CLIENT_ID));
+        assertTrue(adminTokenRequestBody.contains("client_secret=" + CLIENT_SECRET));
 
         // Create user request
         RecordedRequest createUserRequest = mockWebServer.takeRequest();
-        String createUserRequestBody = URLDecoder.decode(createUserRequest.getBody().readUtf8(), StandardCharsets.UTF_8);
+        String createUserRequestBody = createUserRequest.getBody().readUtf8();
 
         assertEquals("POST", createUserRequest.getMethod());
         assertEquals("Bearer admin-access-token", createUserRequest.getHeader(HttpHeaders.AUTHORIZATION));
@@ -240,41 +178,30 @@ class KeycloakClientTest {
     }
 
     @Test
-    void shouldFailWhenAdminTokenRequestFails() {
-        // Given - admin token request падает
+    void shouldFailOnInvalidCredentials() {
+        // Given
         mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(401)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setResponseCode(400)
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .setBody("""
                         {
-                          "error": "invalid_client",
-                          "error_description": "Invalid client credentials"
+                          "error": "invalid_grant",
+                          "error_description": "Invalid user credentials"
                         }
                         """));
 
         // When & Then
-        when(provider.getToken(any())).thenAnswer(invocation -> {
-            Supplier<Mono<TokenResponse>> supplier = invocation.getArgument(0);
-            return supplier.get();
-        });
-
-        when(errorHandler.handle(any())).thenAnswer(invocation -> {
-            Mono<?> mono = invocation.getArgument(0);
-            return mono.onErrorMap(WebClientResponseException.Unauthorized.class,
-                    e -> new InvalidCredentialsException("Invalid client credentials"));
-        });
-
-        StepVerifier.create(keycloakClient.createUser("test@test.com", "password"))
+        StepVerifier.create(keycloakClient.requestToken("wrong@test.com", "wrong-password"))
                 .expectError(InvalidCredentialsException.class)
                 .verify();
     }
 
     @Test
     void shouldFailWhenUserAlreadyExists() {
-        // Given
+        // Given - admin token response
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .setBody("""
                         {
                           "access_token": "admin-token",
@@ -282,9 +209,10 @@ class KeycloakClientTest {
                         }
                         """));
 
+        // Given - conflict response
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(409)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .setBody("""
                         {
                           "errorMessage": "User exists with same email"
@@ -292,20 +220,8 @@ class KeycloakClientTest {
                         """));
 
         // When & Then
-        when(provider.getToken(any())).thenAnswer(invocation -> {
-            Supplier<Mono<TokenResponse>> supplier = invocation.getArgument(0);
-            return supplier.get();
-        });
-
-        when(errorHandler.handle(any())).thenAnswer(invocation -> {
-            Mono<?> mono = invocation.getArgument(0);
-            return mono.onErrorMap(WebClientResponseException.Conflict.class,
-                    e -> new KeycloakClientConflictException("User already exists"));
-        });
-
         StepVerifier.create(keycloakClient.createUser("existing@test.com", "password"))
                 .expectError(KeycloakClientConflictException.class)
                 .verify();
     }
-
 }

@@ -1,41 +1,54 @@
 package com.ersted.provider;
 
 import com.ersted.dto.TokenResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 @Slf4j
-@Component
-@RequiredArgsConstructor
 public class KeycloakAdminTokenProvider {
 
-    private final int DEFAULT_TOKEN_TTL_SECONDS;
-    private final long TOKEN_REFRESH_MARGIN_SECONDS;
+    private final AtomicReference<Mono<TokenResponse>> cachedTokenMono = new AtomicReference<>();
+
+    private final long tokenRefreshMarginSeconds;
+    private final int defaultTokenTtlSeconds;
 
     private volatile TokenResponse cachedToken;
     private volatile Instant expiresAt;
 
+    public KeycloakAdminTokenProvider(long tokenRefreshMarginSeconds, int defaultTokenTtlSeconds) {
+        this.tokenRefreshMarginSeconds = tokenRefreshMarginSeconds;
+        this.defaultTokenTtlSeconds = defaultTokenTtlSeconds;
+    }
 
     public Mono<TokenResponse> getToken(Supplier<Mono<TokenResponse>> tokenSupplier) {
-        if (isTokenValid()) {
-            log.debug("Using cached admin token");
-            return Mono.just(cachedToken);
-        }
-
-        log.debug("Cache miss, fetching new admin token");
-        return tokenSupplier.get()
-                .doOnSuccess(this::cacheToken);
+        return Mono.defer(() -> {
+            if (isTokenValid()) {
+                return Mono.just(cachedToken);
+            }
+            return cachedTokenMono.updateAndGet(current -> {
+                if (current != null) return current;
+                return tokenSupplier.get()
+                        .doOnSuccess(this::cacheToken)
+                        .doFinally(_ -> cachedTokenMono.set(null))
+                        .cache();
+            });
+        });
     }
 
     public boolean isTokenValid() {
         return cachedToken != null
                 && expiresAt != null
                 && Instant.now().isBefore(expiresAt);
+    }
+
+    public void invalidate() {
+        log.info("Admin token cache invalidated");
+        this.cachedToken = null;
+        this.expiresAt = null;
     }
 
     private void cacheToken(TokenResponse token) {
@@ -51,14 +64,14 @@ public class KeycloakAdminTokenProvider {
         Integer expiresIn = token.getExpiresIn();
         if (expiresIn == null || expiresIn <= 0) {
             log.warn("Token expiresIn is null or invalid, using default: {} seconds",
-                    DEFAULT_TOKEN_TTL_SECONDS);
-            return DEFAULT_TOKEN_TTL_SECONDS;
+                    defaultTokenTtlSeconds);
+            return defaultTokenTtlSeconds;
         }
         return expiresIn;
     }
 
     private Instant calculateExpiration(int expiresInSeconds) {
-        long safetyMargin = Math.min(TOKEN_REFRESH_MARGIN_SECONDS, expiresInSeconds / 2);
+        long safetyMargin = Math.min(tokenRefreshMarginSeconds, expiresInSeconds / 2);
         return Instant.now().plusSeconds(expiresInSeconds - safetyMargin);
     }
 

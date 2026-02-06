@@ -1,4 +1,4 @@
-package com.ersted.exception.hendler;
+package com.ersted.exception.handler;
 
 import com.ersted.exception.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
-import javax.naming.ServiceUnavailableException;
 
 @Slf4j
 @Component
@@ -38,7 +37,7 @@ public class KeycloakErrorHandler {
                 .onErrorResume(WebClientResponseException.class, e -> {
                     if (e.getStatusCode().is5xxServerError()) {
                         log.error("Keycloak server error: {}", e.getStatusCode());
-                        return Mono.error(new ServiceUnavailableException("Keycloak unavailable"));
+                        return Mono.error(new KeycloakClientServiceUnavailableException("Keycloak unavailable"));
                     }
                     log.error("Keycloak error: {}", e.getResponseBodyAsString());
                     return Mono.error(new KeycloakClientException("Keycloak error"));

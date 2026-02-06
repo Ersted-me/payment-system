@@ -1,4 +1,4 @@
-package com.ersted.exception.hendler;
+package com.ersted.exception.handler;
 
 import com.ersted.dto.ErrorResponse;
 import com.ersted.exception.*;

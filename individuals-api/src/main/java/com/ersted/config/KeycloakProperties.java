@@ -10,7 +10,6 @@ import org.springframework.validation.annotation.Validated;
 @NoArgsConstructor
 @Getter
 @Setter
-@Builder
 @Validated
 @ConfigurationProperties(prefix = "keycloak")
 public class KeycloakProperties {
@@ -27,13 +26,12 @@ public class KeycloakProperties {
     @NotBlank
     private String clientSecret;
 
-    private AdminTokenProperties adminToken;
+    private AdminTokenProperties adminToken = new AdminTokenProperties();
 
-    private RequestsRetryProperties requestsRetry;
+    private RequestsRetryProperties requestsRetry = new RequestsRetryProperties();
 
     @Getter
     @Setter
-    @Builder
     public static class AdminTokenProperties {
 
         @Min(value = 30)
@@ -46,7 +44,6 @@ public class KeycloakProperties {
 
     @Getter
     @Setter
-    @Builder
     public static class RequestsRetryProperties {
 
         @Min(value = 0)
@@ -60,13 +57,5 @@ public class KeycloakProperties {
 
     }
 
-
-    public String getTokenUri() {
-        return url + "/realms/" + realm + "/protocol/openid-connect/token";
-    }
-
-    public String getAdminUsersUri() {
-        return url + "/admin/realms/" + realm + "/users";
-    }
 }
 
