@@ -14,7 +14,7 @@ keycloak:
   requests-retry:
     attempts: ${KEYCLOAK_REQUESTS_RETRY_ATTEMPTS:3}
     delay-seconds: ${KEYCLOAK_REQUESTS_DELAY_SECONDS:1}
-    request-timeout-seconds: ${KEYCLOAK_REQUESTS_RETRY_ATTEMPTS:10}
+    request-timeout-seconds: ${KEYCLOAK_REQUESTS_TIMEOUT_SECONDS:10}
 
 spring:
   main:
