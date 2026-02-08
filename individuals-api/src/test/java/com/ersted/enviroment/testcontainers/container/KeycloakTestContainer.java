@@ -1,19 +1,17 @@
-package com.ersted.config;
+package com.ersted.enviroment.testcontainers.container;
 
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.MountableFile;
 
 import java.util.Map;
 
-public interface KeycloakTestContainer {
+public class KeycloakTestContainer {
 
-    GenericContainer<?> KEYCLOAK = createKeycloak();
+    public static final GenericContainer<?> KeycloakTestContainer;
 
-    static GenericContainer<?> createKeycloak() {
-        GenericContainer<?> container = new GenericContainer<>("quay.io/keycloak/keycloak:26.2")
+    static {
+        KeycloakTestContainer = new GenericContainer<>("quay.io/keycloak/keycloak:26.2")
                 .withCommand("start-dev", "--import-realm")
                 .withExposedPorts(8080, 9000)
                 .withEnv(Map.of(
@@ -32,16 +30,6 @@ public interface KeycloakTestContainer {
                 );
 
 
-        container.start();
-        return container;
-    }
-
-    @DynamicPropertySource
-    static void keycloakProperties(DynamicPropertyRegistry registry) {
-        registry.add("keycloak.url", () -> "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080));
-        registry.add("keycloak.realm", () -> "payment-system");
-        registry.add("keycloak.client-id", () -> "individuals-api");
-        registry.add("keycloak.client-secret", () -> "test-secret-for-integration-tests");
     }
 
 }

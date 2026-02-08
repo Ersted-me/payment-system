@@ -1,10 +1,8 @@
-package com.ersted.controller;
+package com.ersted.spec.integration.controller;
 
-import com.ersted.client.KeycloakClient;
-import com.ersted.config.KeycloakTestContainer;
 import com.ersted.dto.*;
+import com.ersted.spec.integration.LifecycleSpecification;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,13 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-class AuthControllerTest implements KeycloakTestContainer {
-
-    @Autowired
-    private WebTestClient webTestClient;
-
-    @Autowired
-    private KeycloakClient keycloakClient;
+class AuthControllerTest extends LifecycleSpecification {
 
     @Test
     void shouldRegistrationFlowSuccessfully() {

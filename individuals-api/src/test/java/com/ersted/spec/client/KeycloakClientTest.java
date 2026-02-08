@@ -1,5 +1,7 @@
-package com.ersted.client;
+package com.ersted.spec.client;
 
+import com.ersted.client.KeycloakClient;
+import com.ersted.client.KeycloakClientSettings;
 import com.ersted.exception.InvalidCredentialsException;
 import com.ersted.exception.KeycloakClientConflictException;
 import com.ersted.exception.handler.KeycloakErrorHandler;

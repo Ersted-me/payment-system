@@ -1,9 +1,9 @@
-package com.ersted.service;
+package com.ersted.spec.service;
 
 import com.ersted.client.KeycloakClient;
 import com.ersted.dto.TokenResponse;
-import com.ersted.dto.UserInfoResponse;
 import com.ersted.exception.KeycloakClientUnauthorizedException;
+import com.ersted.service.TokenService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,7 +19,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
