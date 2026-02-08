@@ -1,5 +1,6 @@
 package com.ersted.service;
 
+import com.ersted.annotation.Counted;
 import com.ersted.client.KeycloakClient;
 import com.ersted.dto.*;
 import com.ersted.exception.ValidationException;
@@ -17,16 +18,19 @@ public class UserService {
     private final KeycloakClient keycloakClient;
     private final TokenService tokenService;
 
+    @Counted
     @WithSpan("userService.login")
     public Mono<TokenResponse> login(UserLoginRequest userLoginRequest) {
         return tokenService.login(userLoginRequest.getEmail(), userLoginRequest.getPassword());
     }
 
+    @Counted
     @WithSpan("userService.refreshToken")
     public Mono<TokenResponse> refreshToken(TokenRefreshRequest tokenRefreshRequest) {
         return tokenService.refreshToken(tokenRefreshRequest.getRefreshToken());
     }
 
+    @Counted
     @WithSpan("userService.register")
     public Mono<TokenResponse> register(UserRegistrationRequest request) {
 

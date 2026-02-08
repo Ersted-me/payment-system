@@ -1,5 +1,6 @@
 package com.ersted.service;
 
+import com.ersted.annotation.Counted;
 import com.ersted.client.KeycloakClient;
 import com.ersted.dto.TokenResponse;
 import com.ersted.dto.UserInfoResponse;
@@ -36,6 +37,7 @@ public class TokenService {
         return keycloakClient.refreshToken(refreshToken);
     }
 
+    @Counted
     @WithSpan("tokenService.getUserInfo")
     public Mono<UserInfoResponse> getUserInfo(@NotNull String token) {
         String cleanToken = token.startsWith("Bearer ")
