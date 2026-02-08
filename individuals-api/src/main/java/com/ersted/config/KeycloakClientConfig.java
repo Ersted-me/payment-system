@@ -50,21 +50,6 @@ public class KeycloakClientConfig {
         );
     }
 
-    @Bean
-    public KeycloakClient keycloakClient(
-            WebClient keycloakWebClient,
-            KeycloakClientSettings settings,
-            KeycloakErrorHandler errorHandler,
-            KeycloakAdminTokenProvider keycloakAdminTokenProvider
-    ) {
-        return new KeycloakClient(
-                keycloakWebClient,
-                settings,
-                errorHandler,
-                keycloakAdminTokenProvider
-        );
-    }
-
     private String buildUserRegistrationUrl() {
         return UriComponentsBuilder.fromUriString(properties.getUrl())
                 .pathSegment("admin", "realms", properties.getRealm(), "users")

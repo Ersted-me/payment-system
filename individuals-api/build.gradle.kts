@@ -21,28 +21,37 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+	imports {
+		mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.15.0")
+	}
+}
+
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	implementation ("org.springframework.boot:spring-boot-starter-oauth2-client")
 	implementation ("org.springframework.boot:spring-boot-starter-validation")
-	implementation("org.springframework.boot:spring-boot-starter-aop")
 
 //	Observability
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	implementation("io.micrometer:micrometer-registry-prometheus")
+	implementation("org.springframework.boot:spring-boot-starter-aop")
+
+	// metrics + logs
+	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 	implementation("net.logstash.logback:logstash-logback-encoder:9.0")
-	implementation("io.micrometer:micrometer-tracing-bridge-otel")
-	implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-	implementation("io.micrometer:context-propagation")
-	implementation("io.projectreactor:reactor-core-micrometer")
-	runtimeOnly("io.grpc:grpc-netty-shaded:1.78.0")
+
+	//trace needs AOP
+	implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
+
+
 
 //	OpenApi
 	implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9")
 	implementation("org.openapitools:jackson-databind-nullable:0.2.8")
 	implementation("io.swagger.core.v3:swagger-annotations:2.2.41")
+
 
 //	Helpers
 	implementation("org.projectlombok:lombok:1.18.42")

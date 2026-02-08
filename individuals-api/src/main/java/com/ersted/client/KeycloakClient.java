@@ -6,11 +6,13 @@ import com.ersted.exception.KeycloakClientServiceUnavailableException;
 import com.ersted.exception.handler.KeycloakErrorHandler;
 import com.ersted.provider.KeycloakAdminTokenProvider;
 import io.netty.handler.timeout.TimeoutException;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -21,6 +23,7 @@ import java.net.ConnectException;
 import java.util.List;
 
 @Slf4j
+@Component
 @RequiredArgsConstructor
 public class KeycloakClient {
 
@@ -36,7 +39,7 @@ public class KeycloakClient {
     private final KeycloakErrorHandler errorHandler;
     private final KeycloakAdminTokenProvider adminTokenProvider;
 
-
+    @WithSpan("keycloakClient.requestToken")
     public Mono<TokenResponse> requestToken(String email, String password) {
         var formData = buildPasswordGrantFormData(email, password);
         return executeTokenRequest(formData)
@@ -44,6 +47,7 @@ public class KeycloakClient {
                 .doOnSuccess(_ -> log.info("User authenticated: {}", email));
     }
 
+    @WithSpan("keycloakClient.refreshToken")
     public Mono<TokenResponse> refreshToken(String refreshToken) {
         var formData = buildRefreshTokenGrantFormData(refreshToken);
         return executeTokenRequest(formData)
@@ -51,6 +55,7 @@ public class KeycloakClient {
                 .doOnSuccess(_ -> log.info("Token refreshed successfully"));
     }
 
+    @WithSpan("keycloakClient.createUser")
     public Mono<Void> createUser(String email, String password) {
         return adminToken()
                 .doOnSubscribe(_ -> log.info("Creating user: {}", email))

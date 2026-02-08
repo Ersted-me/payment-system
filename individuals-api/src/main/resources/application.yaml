@@ -37,31 +37,27 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${keycloak.url}/realms/${keycloak.realm}
-  reactor:
-    context-propagation: auto
 
 management:
-  tracing:
-    sampling:
-      probability: 1.0
-  otlp:
-    tracing:
-      endpoint: ${OTLP_TRACING_ENDPOINT:http://localhost:4317}
-      transport: ${OTLP_TRACING_TRANSPORT:grpc}
-
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-
   prometheus:
     metrics:
       export:
         enabled: true
-  endpoint:
-    prometheus:
-      access: read_only
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
 
-  observations:
-    annotations:
-      enabled: true
+otel:
+  service:
+    name: ${spring.application.name}
+  traces:
+    exporter: otlp
+  metrics:
+    exporter: none
+  logs:
+    exporter: none
+  exporter:
+    otlp:
+      endpoint: ${OTLP_TRACING_GRPC_ENDPOINT:http://alloy:4317}
+      protocol: grpc

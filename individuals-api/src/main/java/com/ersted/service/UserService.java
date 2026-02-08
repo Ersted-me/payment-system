@@ -3,7 +3,7 @@ package com.ersted.service;
 import com.ersted.client.KeycloakClient;
 import com.ersted.dto.*;
 import com.ersted.exception.ValidationException;
-import io.micrometer.tracing.annotation.NewSpan;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,49 +16,34 @@ public class UserService {
 
     private final KeycloakClient keycloakClient;
     private final TokenService tokenService;
-    private final UserMetrics userMetrics;
 
-
-    @NewSpan("user-login")
+    @WithSpan("userService.login")
     public Mono<TokenResponse> login(UserLoginRequest userLoginRequest) {
-        return tokenService.login(userLoginRequest.getEmail(), userLoginRequest.getPassword())
-                .doOnSuccess(_ -> userMetrics.recordLoginSuccess())
-                .doOnError(_ -> userMetrics.recordLoginFailure());
+        return tokenService.login(userLoginRequest.getEmail(), userLoginRequest.getPassword());
     }
 
-    @NewSpan("user-refresh-token")
+    @WithSpan("userService.refreshToken")
     public Mono<TokenResponse> refreshToken(TokenRefreshRequest tokenRefreshRequest) {
-        return tokenService.refreshToken(tokenRefreshRequest.getRefreshToken())
-                .doOnSuccess(_ -> userMetrics.recordRefreshTokenSuccess())
-                .doOnError(_ -> userMetrics.recordRefreshTokenFailure());
+        return tokenService.refreshToken(tokenRefreshRequest.getRefreshToken());
     }
 
-    @NewSpan("user-register")
+    @WithSpan("userService.register")
     public Mono<TokenResponse> register(UserRegistrationRequest request) {
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
-            userMetrics.recordRegisterFailure();
             return Mono.error(new ValidationException("Passwords do not match"));
         }
 
         return keycloakClient.createUser(request.getEmail(), request.getPassword())
                 .doOnSubscribe(_ -> log.info("User registration: {}", request.getEmail()))
                 .then(Mono.defer(() -> tokenService.login(request.getEmail(), request.getPassword())))
-                .doOnSuccess(_ -> {
-                    userMetrics.recordRegisterSuccess();
-                    log.info("User registered successfully: {}", request.getEmail());
-                })
-                .doOnError(_ -> {
-                    userMetrics.recordRegisterFailure();
-                    log.warn("Registration failed for user: {}", request.getEmail());
-                });
+                .doOnSuccess(_ -> log.info("User registered successfully: {}", request.getEmail()))
+                .doOnError(e -> log.warn("Registration failed for user: {}", request.getEmail()));
     }
 
-    @NewSpan("user-fetch-user-info")
+    @WithSpan("userService.fetchUserInfo")
     public Mono<UserInfoResponse> fetchUserInfo(String token) {
-        return tokenService.getUserInfo(token)
-                .doOnSuccess(_ -> userMetrics.recordGetInfoSuccess())
-                .doOnError(_ -> userMetrics.recordGetInfoFailure());
+        return tokenService.getUserInfo(token);
     }
 
 }

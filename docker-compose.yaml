@@ -16,8 +16,7 @@ services:
       KEYCLOAK_REALM: payment-system
       KEYCLOAK_CLIENT_ID: individuals-api
       KEYCLOAK_CLIENT_SECRET: 8wb8HtX44VRUfquzs08Fk1dDH74d9vKc
-      OTLP_TRACING_ENDPOINT: http://alloy:4317
-      OTLP_TRACING_TRANSPORT: grpc
+      OTLP_TRACING_GRPC_ENDPOINT: http://alloy:4317
     depends_on:
       keycloak:
         condition: service_started
