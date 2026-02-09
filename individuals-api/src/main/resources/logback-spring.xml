@@ -6,6 +6,10 @@
 
                 <timestamp/>
                 <logLevel/>
+                <mdc>
+                    <includeMdcKeyName>traceId</includeMdcKeyName>
+                    <includeMdcKeyName>spanId</includeMdcKeyName>
+                </mdc>
                 <loggerName/>
                 <threadName/>
                 <message/>
