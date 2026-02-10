@@ -90,6 +90,10 @@ services:
   alloy:
     image: grafana/alloy:v1.12.2
     container_name: alloy
+    labels:
+      - "monitoring.enabled=true"
+      - "monitoring.port=12345"
+      - "monitoring.path=/metrics"
     command:
       - run
       - --server.http.listen-addr=0.0.0.0:12345
@@ -111,6 +115,10 @@ services:
   prometheus:
     image: prom/prometheus:v3.9.1
     container_name: prometheus
+    labels:
+      - "monitoring.enabled=true"
+      - "monitoring.port=9090"
+      - "monitoring.path=/metrics"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -129,6 +137,10 @@ services:
   loki:
     image: grafana/loki:3.6.4
     container_name: loki
+    labels:
+      - "monitoring.enabled=true"
+      - "monitoring.port=3100"
+      - "monitoring.path=/metrics"
     ports:
       - "3100:3100"
     command:
@@ -145,6 +157,10 @@ services:
   tempo:
     image: grafana/tempo:2.10.0
     container_name: tempo
+    labels:
+      - "monitoring.enabled=true"
+      - "monitoring.port=3200"
+      - "monitoring.path=/metrics"
     command:
       - '-config.file=/etc/tempo/config.yaml'
     ports:
@@ -159,6 +175,10 @@ services:
   grafana:
     image: grafana/grafana:12.3
     container_name: grafana
+    labels:
+      - "monitoring.enabled=true"
+      - "monitoring.port=3000"
+      - "monitoring.path=/metrics"
     ports:
       - "3000:3000"
     volumes:
