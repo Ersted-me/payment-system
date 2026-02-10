@@ -44,7 +44,7 @@ services:
       KC_DB_USERNAME: keycloak
       KC_HEALTH_ENABLED: true
     volumes:
-      - ./keycloak:/opt/keycloak/data/import
+      - ./infrastructure/keycloak:/opt/keycloak/data/import
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -100,7 +100,7 @@ services:
       - "4317:4317"
       - "4318:4318"
     volumes:
-      - ./alloy/config.alloy:/etc/alloy/config.alloy
+      - ./infrastructure/alloy/config.alloy:/etc/alloy/config.alloy
       - alloy-data:/var/lib/alloy/data
     depends_on:
       docker-socket-proxy:
@@ -118,7 +118,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     depends_on:
       alloy:
@@ -134,7 +134,7 @@ services:
     command:
       - -config.file=/etc/loki/config.yaml
     volumes:
-      - ./loki/config.yaml:/etc/loki/config.yaml
+      - ./infrastructure/loki/config.yaml:/etc/loki/config.yaml
       - loki-data:/loki
     depends_on:
       alloy:
@@ -150,7 +150,7 @@ services:
     ports:
       - "3200:3200"
     volumes:
-      - ./tempo/config.yaml:/etc/tempo/config.yaml
+      - ./infrastructure/tempo/config.yaml:/etc/tempo/config.yaml
       - tempo-data:/var/tempo
     networks:
       - payment-system-network
@@ -163,7 +163,7 @@ services:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       loki:
         condition: service_started
