@@ -1,0 +1,20 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(user, "Пользователь", "Работает с платёжным приложением через веб или мобильный интерфейс")
+Person(devUser, "Разработчик / DevOps", "Следит за состоянием системы")
+
+System(paymentSystem, "Платёжная система", "Позволяет управлять кошельками, проводить платежи и получать уведомления")
+System(observability, "Мониторинг", "Позволяет следить за состоянием системы")
+
+System_Ext(provider, "Внешний платёжный провайдер", "Обрабатывает платежи и отправляет уведомления о статусе")
+System_Ext(fx, "Сервис обмена валют", "Предоставляет актуальные курсы валют")
+
+Rel(devUser, observability, "Смотрит дашборды и алерты")
+Rel(observability, paymentSystem, "Собирает метрики, логи, трейсы")
+Rel(user, paymentSystem, "Пользуется")
+Rel(paymentSystem, provider, "Запрашивает проведение платежей")
+Rel(provider, paymentSystem, "Отправляет уведомление о результате")
+Rel(paymentSystem, fx, "Получает курсы валют")
+
+@enduml

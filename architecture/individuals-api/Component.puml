@@ -1,17 +1,36 @@
 @startuml
-!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
 
-Container(indApi, "individuals-api", "Spring Boot WebFlux")
 
-Component(authController, "AuthController", "REST Controller", "Обрабатывает HTTP-запросы клиента")
-Component(userService, "UserService", "Сервис", "Оркестрация регистрации и запроса информации")
-Component(tokenService, "TokenService", "Сервис", "Работа с токенами и refresh-флоу")
-Component(keycloakClient, "KeycloakClient", "WebClient Adapter", "Взаимодействует с Keycloak REST API")
-Component(dto, "DTO (сгенерированные)", "OpenAPI DTO", "Сгенерированные модели запросов/ответов")
+Container_Boundary(individuals_api, "Individuals Api") {
+    Component(authController, "AuthController", "REST Controller", "Обрабатывает HTTP-запросы клиента по /auth/**")
 
-Rel(authController, userService, "вызов")
-Rel(userService, tokenService, "вызов")
-Rel(userService, keycloakClient, "вызов")
-Rel(tokenService, keycloakClient, "вызов")
-Rel(authController, dto, "использует")
+    Component(userService, "UserService", "Service", "Оркестрация регистрации, обновления, удаления и запроса информации")
+    Component(tokenService, "TokenService", "Service", "Работа с токенами и refresh-флоу")
+
+    Component(keycloakClient, "KeycloakClient", "WebClient Adapter", "Взаимодействует с Keycloak")
+    Component(keycloakAdminTokenProvider, "KeycloakAdminTokenProvider", "Component", "Управление админским токеном Keycloak клиента")
+
+    Component(personController, "PersonController", "REST Controller", "Обрабатывает HTTP-запросы клиента по /users/**")
+    Component(personClient, "PersonClient", "OpenAPI Generated Feign Client", "Взаимодействует с Person Service")
+}
+
+Person(user, "Пользователь", "Работает с платёжным приложением через веб или мобильный интерфейс")
+Rel(user, authController, "Аутентификация, Авторизация, Регистрация, Обновление токена, получение информации по пользователю", "REST API")
+Rel(user, personController, "Получение информации (включая связанные сущности), обновление данных, удаление пользователя", "REST API")
+
+Container(keycloak, "Keycloak", "Keycloak", "Управление пользователями, токены, роли, авторизация")
+Rel(keycloakClient, keycloak, "Регистрация, аутентификация / авторизация, удаление пользователя", "REST API")
+Rel(keycloakClient, keycloakAdminTokenProvider, "")
+
+Container(persons_service, "Persons Service", "Java, Spring Boot", "Управления пользователями и их связанными сущностями")
+Rel(personClient, persons_service, "Получение / обновление информации по профилю, удаление профиля", "REST API")
+
+Rel(authController, userService,"")
+Rel(personController, userService,"")
+Rel(userService, tokenService, "")
+Rel(userService, personClient, "")
+Rel(userService, keycloakClient, "")
+Rel(tokenService, keycloakClient, "")
+
 @enduml

@@ -1,0 +1,46 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+
+Container_Boundary(persons_service, "Persons Service") {
+    Component(userController, "UserController", "REST Controller", "Обрабатывает HTTP-запросы клиента по /users/**")
+    Component(individualController, "IndividualController", "REST Controller", "Обрабатывает HTTP-запросы клиента по /users/{id}/individual")
+
+    Component(userService, "UserService", "Service", "Операции с учетными данными пользователя")
+    Component(addressService, "AddressService", "Service", "Операции с адресом пользователя")
+    Component(countryService, "CountriesService", "Service", "Операции со страной")
+    Component(individualService, "IndividualService", "Service", "Операции с профилем физ. лица")
+
+
+    Component(userRepository, "UserRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице USERS")
+    Component(addressRepository, "AddressRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице ADDRESSES")
+    Component(countryRepository, "CountriesRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице COUNTRIES")
+    Component(individualRepository, "IndividualRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице INDIVIDUALS")
+
+}
+
+Container(individuals_api, "Individuals Api", "Java, Spring Boot WebFlux", "Оркестратор: регистрация, логин, обновление токена, получение данных пользователя")
+Rel(individuals_api, userController, "Получение / обновление / удаление информации по учетной записи", "REST API")
+Rel(individuals_api, individualController, "Получение / обновление / удаление информации по профилю физ. лица", "REST API")
+
+Rel(userController, userService, "")
+Rel(individualController, individualService, "")
+
+Rel(userService, addressService, "")
+Rel(addressService, countryService, "")
+Rel(individualService, userService, "")
+
+Rel(userService, userRepository, "")
+Rel(addressService, addressRepository, "")
+Rel(countryService, countryRepository, "")
+Rel(individualService, individualRepository, "")
+
+
+ContainerDb(person_database, "Person Database", "PostgreSQL", "Хранение информации по профилям пользователей")
+Rel(userRepository, person_database, "Запись / чтение данных", "SQL")
+Rel(addressRepository, person_database, "Запись / чтение данных", "SQL")
+Rel(countryRepository, person_database, "Запись / чтение данных", "SQL")
+Rel(individualRepository, person_database, "Запись / чтение данных", "SQL")
+
+
+@enduml
