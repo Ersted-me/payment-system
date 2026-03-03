@@ -24,8 +24,13 @@ person --> api: status: 201 \n application/json \n location: /v1/users/{userId}
 api -> keycloak: POST \n /admin/realms/{realm}/users \n application\json \n email, password, userId
 keycloak -> keycloak: Создание нового пользователя
 keycloak --> api: status: 201
+api -> person: PATCH \n /v1/users/{userId} \n application/json \n status: ACTIVE
+person -> personDb: Сохранение данных \n status: ACTIVE, filled: false
+personDb --> person: Подтверждение обновления статуса
+person --> api: status: 200
 
 alt #FFCCCC Не удалось создать пользователя в Keycloak
+keycloak -> keycloak: Создание нового пользователя
 keycloak --> api: status: 4xx, 5xx \n application/json
 api -> api: Обработка ошибки
 api -> person: DELETE \n /v1/users/{userId}
@@ -39,7 +44,5 @@ api -> keycloak: POST \n /realms/{realm}/protocol/openid-connect/token \n applic
 keycloak -> keycloak: Аутентификация / Авторизация
 keycloak --> api: application/json \n access_token, refresh_token ...
 api --> client: application/json \n access_token, refresh_token ...
-
-
 
 @enduml
