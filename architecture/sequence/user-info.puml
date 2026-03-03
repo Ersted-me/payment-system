@@ -1,0 +1,32 @@
+@startuml
+
+autonumber
+
+actor Client as client
+participant "Individuals API" as api
+participant "Person Service" as person
+participant "Person Database" as personDb
+
+
+client -> api: GET \n Authorization: Bearer ... \n /v1/users/{userId}/individual
+api -> api: Валидация Bearer токена
+
+alt #FFCCCC Ошибка валидации токена
+api -> api: Валидация Bearer токена
+api --> client: status: 401 \n application\json \n error, status
+end
+
+api -> person: GET \n /v1/users/{userId}/individual
+person -> personDb: Получение данных по пользователю
+personDb --> person: Данные по пользователю
+person --> api: status: 200 \n application/json \n {...}
+api --> client: status: 200 \n application/json \n {...}
+
+alt #FFCCCC Пользователь не найден
+person -> personDb: Получение данных по пользователю
+personDb --> person: Пользователь не найден
+person --> api: status: 400 \n application/json \n error, status
+api --> client: status: 400 \n application/json \n error, status
+end
+
+@enduml
