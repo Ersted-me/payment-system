@@ -1,0 +1,45 @@
+@startuml
+
+autonumber
+
+actor Client as client
+participant "Individuals API" as api
+participant "Person Service" as person
+participant "Person Database" as personDb
+participant Keycloak as keycloak
+
+
+client -> api: POST \n /v1/auth/registration \n application/json
+api -> api: Валидация запроса
+
+alt #FFCCCC Ошибка валидации
+api -> api: Валидация запроса
+api --> client: status: 400 \n application\json \n error, status
+end
+
+api -> person: POST \n /v1/users \n application/json
+person -> personDb: Сохранение данных \n статус: PENDING
+personDb --> person: userId
+person --> api: status: 201 \n application/json \n location: /v1/users/{userId}
+api -> keycloak: POST \n /admin/realms/{realm}/users \n application\json \n email, password, userId
+keycloak -> keycloak: Создание нового пользователя
+keycloak --> api: status: 201
+
+alt #FFCCCC Не удалось создать пользователя в Keycloak
+keycloak --> api: status: 4xx, 5xx \n application/json
+api -> api: Обработка ошибки
+api -> person: DELETE \n /v1/users/{userId}
+person -> personDb: Удаление записи по userId
+personDb --> person: Подтверждение удаления
+person --> api: status: 204
+api --> client: status: 4xx, 5xx \n application/json \n error, status
+end
+
+api -> keycloak: POST \n /realms/{realm}/protocol/openid-connect/token \n application/x-www-form-urlencoded \n grant_type: password
+keycloak -> keycloak: Аутентификация / Авторизация
+keycloak --> api: application/json \n access_token, refresh_token ...
+api --> client: application/json \n access_token, refresh_token ...
+
+
+
+@enduml
