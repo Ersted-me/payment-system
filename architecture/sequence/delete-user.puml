@@ -1,0 +1,35 @@
+@startuml
+
+autonumber
+
+actor Client as client
+participant "Individuals API" as api
+participant "Person Service" as person
+participant "Person Database" as personDb
+participant Keycloak as keycloak
+
+client -> api: DELETE \n Authorization: Bearer ... \n /v1/users/{userId}
+api -> api: Валидация токена
+
+alt #FFCCCC Ошибка валидации токена
+api -> api: Валидация Bearer токена
+api --> client: status: 401 \n application\json \n error, status
+end
+
+api -> keycloak: PUT \n /admin/realms/{realm}/users/{keycloakId} \n enabled: false
+keycloak --> api: status: 204
+
+alt #FFCCCC ошибка на стороне Keycloak
+api -> keycloak: PUT \n /admin/realms/{realm}/users/{keycloakId} \n enabled: false
+keycloak --> api: status: 4xx,5xx \n application\json \n error, status
+api -> api: Обработка ошибки
+api --> client: status: 4xx,5xx \n application\json \n error, status
+end
+
+api -> person: PATCH \n /v1/users/{userId} \n status: ARCHIVED, archived_at: now
+person -> personDb: обновление по userId, status: ARCHIVED, archived_at: now
+personDb --> person: Подтверждение обновления
+person --> api: status: 200
+api --> client: status: 204
+
+@enduml
