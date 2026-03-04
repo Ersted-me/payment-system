@@ -16,7 +16,7 @@ api -> api: Валидация Bearer токена
 api --> client: status: 401 \n application\json \n error, status
 end
 
-api -> person: GET \n /v1/users/{userId}/individual
+api -> person: GET \n Authorization: Bearer {service_token} \n /v1/users/{userId}/individual
 person -> personDb: Получение данных по пользователю
 personDb --> person: Данные по пользователю
 person --> api: status: 200 \n application/json \n {...}

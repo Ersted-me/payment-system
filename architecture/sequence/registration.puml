@@ -17,14 +17,14 @@ api -> api: Валидация запроса
 api --> client: status: 400 \n application\json \n error, status
 end
 
-api -> person: POST \n /v1/users \n application/json
+api -> person: POST \n /v1/users \n Authorization: Bearer {service_token} \n application/json
 person -> personDb: Сохранение данных \n статус: PENDING
 personDb --> person: userId
 person --> api: status: 201 \n application/json \n location: /v1/users/{userId}
 api -> keycloak: POST \n /admin/realms/{realm}/users \n application\json \n email, password, userId
 keycloak -> keycloak: Создание нового пользователя
 keycloak --> api: status: 201
-api -> person: PATCH \n /v1/users/{userId} \n application/json \n status: ACTIVE
+api -> person: PATCH \n /v1/users/{userId} \n Authorization: Bearer {service_token} \n application/json \n status: ACTIVE
 person -> personDb: Сохранение данных \n status: ACTIVE, filled: false
 personDb --> person: Подтверждение обновления статуса
 person --> api: status: 200
