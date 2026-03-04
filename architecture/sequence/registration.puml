@@ -33,8 +33,8 @@ alt #FFCCCC Не удалось создать пользователя в Keycl
 keycloak -> keycloak: Создание нового пользователя
 keycloak --> api: status: 4xx, 5xx \n application/json
 api -> api: Обработка ошибки
-api -> person: DELETE \n /v1/users/{userId}/fail
-person -> personDb: Удаление записи по userId
+api -> person: POST \n /v1/users/{userId}/purge
+person -> personDb: Удаление "под чистую" пользователя по userId
 personDb --> person: Подтверждение удаления
 person --> api: status: 204
 api --> client: status: 4xx, 5xx \n application/json \n error, status
