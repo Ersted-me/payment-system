@@ -22,4 +22,27 @@ Rel(individuals_api, persons_service, "Заполнение профиля по�
 Rel(persons_service, person_database, "Запись / чтение данных", "SQL")
 
 
+
+Person(dev, "Разработчик / DevOps", "Следит за состоянием системы")
+
+System_Boundary(observability, "Наблюдаемость") {
+    Container(alloy, "Alloy", "Grafana Alloy", "Собирает и маршрутизирует телеметрию")
+    Container(prometheus, "Prometheus", "Prometheus", "Хранит метрики")
+    Container(loki, "Loki", "Grafana Loki", "Хранит логи")
+    Container(tempo, "Tempo", "Grafana Tempo", "Хранит трейсы")
+    Container(grafana, "Grafana", "Grafana", "Визуализация метрик, логов и трейсов")
+}
+
+Rel(dev, grafana, "Смотрит дашборды и алерты", "HTTP")
+
+Rel(alloy, prometheus, "Пишет метрики", "remote_write HTTP")
+Rel(alloy, loki, "Пишет логи", "HTTP")
+Rel(alloy, tempo, "Пишет трейсы", "OTLP gRPC")
+
+Rel(grafana, prometheus, "Читает метрики", "PromQL")
+Rel(grafana, loki, "Читает логи", "LogQL")
+Rel(grafana, tempo, "Читает трейсы", "Tempo HTTP API")
+
+
+
 @enduml

@@ -1,9 +1,7 @@
 @startuml
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
 
-
 Container_Boundary(persons_service, "Persons Service") {
-    Component(userController, "UserController", "REST Controller", "Обрабатывает HTTP-запросы клиента по /users/**")
     Component(individualController, "IndividualController", "REST Controller", "Обрабатывает HTTP-запросы клиента по /users/{id}/individual")
 
     Component(userService, "UserService", "Service", "Операции с учетными данными пользователя")
@@ -16,14 +14,11 @@ Container_Boundary(persons_service, "Persons Service") {
     Component(addressRepository, "AddressRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице ADDRESSES")
     Component(countryRepository, "CountriesRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице COUNTRIES")
     Component(individualRepository, "IndividualRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице INDIVIDUALS")
-
+    Component(audit, "Audit", "Hibernate Envers", "Отслеживание изменений данных во времени (аудита) в микросервисах")
 }
 
 Container(individuals_api, "Individuals Api", "Java, Spring Boot WebFlux", "Оркестратор: регистрация, логин, обновление токена, получение данных пользователя")
-Rel(individuals_api, userController, "Получение / обновление / удаление информации по учетной записи", "REST API")
 Rel(individuals_api, individualController, "Получение / обновление / удаление информации по профилю физ. лица", "REST API")
-
-Rel(userController, userService, "")
 Rel(individualController, individualService, "")
 
 Rel(userService, addressService, "")
