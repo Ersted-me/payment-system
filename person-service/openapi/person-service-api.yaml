@@ -1,0 +1,429 @@
+openapi: 3.0.0
+
+info:
+  title: Person Service
+  description: Управление пользователями и их связанными сущностями (адрес, индивидуальные данные)
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8082/v1
+
+security:
+  - bearerAuth: []
+
+paths:
+  /users/{userUuid}/archive:
+    post:
+      summary: Перевод пользователя в статус "ARCHIVED"
+      tags:
+        - Commands
+      parameters:
+        - $ref: "#/components/parameters/UserUuid"
+      responses:
+        "204":
+          description: Пользователь успешно переведен в статус "ARCHIVED"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Пользователь не найден
+        "409":
+          description: Пользователь уже находится в статусе "ARCHIVED"
+
+  /users/{userUuid}/active:
+    post:
+      summary: Перевод пользователя в статус "ACTIVE"
+      tags:
+        - Commands
+      parameters:
+        - $ref: "#/components/parameters/UserUuid"
+      responses:
+        "204":
+          description: Пользователь успешно переведен в статус "ACTIVE"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Пользователь не найден
+        "409":
+          description: Пользователь уже находится в статусе "ACTIVE"
+
+  /users/{userUuid}/purge:
+    post:
+      summary: Удаление данных пользователя из системы
+      tags:
+        - Commands
+      parameters:
+        - $ref: "#/components/parameters/UserUuid"
+      responses:
+        "204":
+          description: Пользователь успешно удален из системы
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Пользователь не найден
+
+  /users:
+    post:
+      summary: Создание базового пользователя в статусе "PENDING"
+      tags:
+        - User
+      description: Создает представление учетной записи пользователя с адресом проживания и статусом "PENDING"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegistrationRequest"
+      responses:
+        "201":
+          description: Пользователь успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserRegistrationResponse"
+        "400":
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /user/{userUuid}/individual:
+    get:
+      summary: Получение информации по профилю физлица
+      tags:
+        - Individual
+      parameters:
+        - $ref: "#/components/parameters/UserUuid"
+      responses:
+        "200":
+          description: Профиль физлица успешно обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualInfoResponse'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Пользователь с указанным userUuid не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Пользователь не найден
+                status: NOT_FOUND
+
+    put:
+      summary: Создание / обновление профиля физлица
+      tags:
+        - Individual
+      parameters:
+        - $ref: "#/components/parameters/UserUuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndividualInfoRequest'
+      responses:
+        "201":
+          description: Профиль физлица успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualInfoResponse'
+        "200":
+          description: Профиль физлица успешно обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualInfoResponse'
+        "400":
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Пользователь с указанным userUuid не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Пользователь не найден
+                status: NOT_FOUND
+
+
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UserUuid:
+      name: userUuid
+      in: path
+      required: true
+      description: Уникальный идентификатор пользователя
+      schema:
+        type: string
+        format: uuid
+        example: 550e8400-e29b-41d4-a716-446655440000
+
+  responses:
+    Unauthorized:
+      description: Недействительный токен
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Недействительный токен
+            status: UNAUTHORIZED
+    Forbidden:
+      description: Недостаточно прав
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Недостаточно прав
+            status: FORBIDDEN
+
+  schemas:
+    UserRegistrationRequest:
+      type: object
+      required:
+        - email
+        - first_name
+        - last_name
+        - secret_key
+        - address
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email пользователя, используется как логин в Keycloak
+          example: john.doe@example.com
+        first_name:
+          type: string
+          maxLength: 32
+          description: Имя
+          example: John
+        last_name:
+          type: string
+          maxLength: 32
+          description: Фамилия
+          example: Doe
+        secret_key:
+          type: string
+          maxLength: 32
+          description: Секретный ключ для идентификации клиента
+          example: my-secret-key
+        address:
+          type: object
+          required:
+            - address
+            - zip_code
+            - city
+            - state
+            - country
+          properties:
+            address:
+              type: string
+              maxLength: 128
+              description: Улица и номер дома
+              example: ул. Ленина, 123
+            zip_code:
+              type: string
+              maxLength: 32
+              description: Почтовый индекс
+              example: "101000"
+            city:
+              type: string
+              maxLength: 32
+              description: Город
+              example: Москва
+            state:
+              type: string
+              maxLength: 32
+              description: Штат / регион
+              example: Московская область
+            country:
+              type: object
+              required:
+                - name
+                - alpha2
+                - alpha3
+              properties:
+                name:
+                  type: string
+                  maxLength: 32
+                  description: Название страны
+                  example: Россия
+                alpha2:
+                  type: string
+                  minLength: 2
+                  maxLength: 2
+                  description: Код страны ISO 3166-1 alpha-2
+                  example: RU
+                alpha3:
+                  type: string
+                  minLength: 3
+                  maxLength: 3
+                  description: Код страны ISO 3166-1 alpha-3
+                  example: RUS
+
+    UserRegistrationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор пользователя
+          example: 550e8400-e29b-41d4-a716-446655440000
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: john.doe@example.com
+        first_name:
+          type: string
+          description: Имя
+          example: John
+        last_name:
+          type: string
+          description: Фамилия
+          example: Doe
+        status:
+          type: string
+          enum:
+            - PENDING
+          description: Статус учётной записи
+          example: PENDING
+        created:
+          type: string
+          format: date-time
+          description: Дата и время создания
+          example: 2024-01-01T00:00:00Z
+
+    IndividualInfoRequest:
+      type: object
+      properties:
+        passport_number:
+          type: string
+          description: Номер паспорта
+          example: AB123456
+        phone_number:
+          type: string
+          description: Номер телефона
+          example: "+79001234567"
+
+    IndividualInfoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор профиля физлица
+          example: 770e8400-e29b-41d4-a716-446655440000
+        user_id:
+          type: string
+          format: uuid
+          description: Идентификатор связанного пользователя
+          example: 550e8400-e29b-41d4-a716-446655440000
+        passport_number:
+          type: string
+          description: Номер паспорта
+          example: AB123456
+        phone_number:
+          type: string
+          description: Номер телефона
+          example: "+79001234567"
+        status:
+          type: string
+          enum:
+            - PENDING
+            - ACTIVE
+            - VERIFIED
+            - ARCHIVED
+          description: Статус профиля физлица
+          example: PENDING
+        created:
+          type: string
+          format: date-time
+          description: Дата и время создания профиля
+          example: 2024-01-01T00:00:00Z
+        address:
+          type: object
+          properties:
+            address:
+              type: string
+              maxLength: 128
+              description: Улица и номер дома
+              example: ул. Ленина, 123
+            zip_code:
+              type: string
+              maxLength: 32
+              description: Почтовый индекс
+              example: "101000"
+            city:
+              type: string
+              maxLength: 32
+              description: Город
+              example: Москва
+            state:
+              type: string
+              maxLength: 32
+              description: Штат / регион
+              example: Московская область
+            country:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 32
+                  description: Название страны
+                  example: Россия
+                alpha2:
+                  type: string
+                  minLength: 2
+                  maxLength: 2
+                  description: Код страны ISO 3166-1 alpha-2
+                  example: RU
+                alpha3:
+                  type: string
+                  minLength: 3
+                  maxLength: 3
+                  description: Код страны ISO 3166-1 alpha-3
+                  example: RUS
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Ошибка валидации
+        status:
+          type: integer
+          example: BAD_REQUEST

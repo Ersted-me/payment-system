@@ -192,6 +192,24 @@ services:
     networks:
       - payment-system-network
 
+  person-service-postgres:
+    image: postgres:17
+    container_name: person-service-postgres
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: person
+      POSTGRES_USER: person
+      POSTGRES_PASSWORD: person
+    volumes:
+      - person_service_pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment-system-network
 
   nexus:
     image: sonatype/nexus3:3.76.0
@@ -218,6 +236,7 @@ volumes:
   loki-data:
   tempo-data:
   grafana-data:
+  person_service_pg-data:
   nexus-data:
 
 networks:
