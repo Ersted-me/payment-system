@@ -317,8 +317,6 @@ components:
           example: Doe
         status:
           type: string
-          enum:
-            - PENDING
           description: Статус учётной записи
           example: PENDING
         created:
@@ -362,13 +360,8 @@ components:
           example: "+79001234567"
         status:
           type: string
-          enum:
-            - PENDING
-            - ACTIVE
-            - VERIFIED
-            - ARCHIVED
           description: Статус профиля физлица
-          example: PENDING
+          example: ACTIVE
         created:
           type: string
           format: date-time
