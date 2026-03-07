@@ -3,6 +3,7 @@ plugins {
 	idea
 	id("org.springframework.boot")
 	id("io.spring.dependency-management")
+	id("org.openapi.generator")
 }
 
 
@@ -32,6 +33,12 @@ dependencies {
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
 
+	// Swagger + OpenApiPlugin
+	implementation("com.fasterxml.jackson.core:jackson-databind")
+	implementation("jakarta.validation:jakarta.validation-api")
+	implementation("jakarta.annotation:jakarta.annotation-api")
+	implementation("io.swagger.core.v3:swagger-annotations:2.2.20")
+
 	// Tests
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -39,4 +46,49 @@ dependencies {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+openApiGenerate {
+	generatorName.set("spring")
+
+	inputSpec.set("$rootDir/openapi/person-service-api.yaml")
+
+	outputDir.set(layout.buildDirectory.dir("generated/openapi").get().asFile.absolutePath)
+
+	apiPackage.set("com.ersted.personservice.api")
+	modelPackage.set("com.ersted.personservice.model")
+	invokerPackage.set("com.ersted.personservice")
+
+	configOptions.set(mapOf(
+		"library"               to "spring-boot",
+
+		"useSpringBoot4"        to "true",
+		"useJackson3"           to "true",
+
+		"interfaceOnly"         to "true",
+		"skipDefaultInterface"  to "true",
+
+		"openApiNullable"       to "false",
+		"documentationProvider" to "none",
+
+		"useTags"               to "true",
+		"dateLibrary"           to "java8",
+	))
+
+	generateApiTests.set(false)
+	generateModelTests.set(false)
+	generateApiDocumentation.set(false)
+	generateModelDocumentation.set(false)
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir(layout.buildDirectory.dir("/generated/openapi/src/main/java"))
+		}
+	}
+}
+
+tasks.compileJava {
+	dependsOn(tasks.openApiGenerate)
 }
