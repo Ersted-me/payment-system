@@ -12,11 +12,11 @@ security:
   - bearerAuth: []
 
 paths:
-  /users/{userUuid}/archive:
+  /individuals/{userUuid}/archive:
     post:
       summary: Перевод пользователя в статус "ARCHIVED"
       tags:
-        - Commands
+        - Individuals
       parameters:
         - $ref: "#/components/parameters/UserUuid"
       responses:
@@ -31,11 +31,11 @@ paths:
         "409":
           description: Пользователь уже находится в статусе "ARCHIVED"
 
-  /users/{userUuid}/active:
+  /individuals/{userUuid}/active:
     post:
       summary: Перевод пользователя в статус "ACTIVE"
       tags:
-        - Commands
+        - Individuals
       parameters:
         - $ref: "#/components/parameters/UserUuid"
       responses:
@@ -50,11 +50,11 @@ paths:
         "409":
           description: Пользователь уже находится в статусе "ACTIVE"
 
-  /users/{userUuid}/purge:
+  /individuals/{userUuid}/purge:
     post:
       summary: Удаление данных пользователя из системы
       tags:
-        - Commands
+        - Individuals
       parameters:
         - $ref: "#/components/parameters/UserUuid"
       responses:
@@ -67,25 +67,25 @@ paths:
         "404":
           description: Пользователь не найден
 
-  /users:
+  /individuals:
     post:
-      summary: Создание базового пользователя в статусе "PENDING"
+      summary: Создание профиля пользователя в статусе "PENDING"
       tags:
-        - User
-      description: Создает представление учетной записи пользователя с адресом проживания и статусом "PENDING"
+        - Individuals
+      description: Создание профиля пользователя в статусе "PENDING"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserRegistrationRequest"
+              $ref: "#/components/schemas/IndividualRegistrationRequest"
       responses:
         "201":
-          description: Пользователь успешно создан
+          description: Профиль физлица успешно создан
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserRegistrationResponse"
+                $ref: '#/components/schemas/IndividualInfoResponse'
         "400":
           description: Ошибка валидации
           content:
@@ -97,11 +97,11 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
-  /user/{userUuid}/individual:
+  /individuals/{userUuid}:
     get:
       summary: Получение информации по профилю физлица
       tags:
-        - Individual
+        - Individuals
       parameters:
         - $ref: "#/components/parameters/UserUuid"
       responses:
@@ -125,10 +125,10 @@ paths:
                 error: Пользователь не найден
                 status: NOT_FOUND
 
-    put:
-      summary: Создание / обновление профиля физлица
+    patch:
+      summary: Обновление профиля физлица
       tags:
-        - Individual
+        - Individuals
       parameters:
         - $ref: "#/components/parameters/UserUuid"
       requestBody:
@@ -136,14 +136,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IndividualInfoRequest'
+              $ref: '#/components/schemas/IndividualInfoUpdateRequest'
       responses:
-        "201":
-          description: Профиль физлица успешно создан
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IndividualInfoResponse'
         "200":
           description: Профиль физлица успешно обновлён
           content:
@@ -211,15 +205,25 @@ components:
             status: FORBIDDEN
 
   schemas:
-    UserRegistrationRequest:
+    IndividualRegistrationRequest:
       type: object
       required:
+        - passport_number
+        - phone_number
         - email
         - first_name
         - last_name
         - secret_key
         - address
       properties:
+        passport_number:
+          type: string
+          description: Номер паспорта
+          example: AB123456
+        phone_number:
+          type: string
+          description: Номер телефона
+          example: "+79001234567"
         email:
           type: string
           format: email
@@ -294,38 +298,7 @@ components:
                   description: Код страны ISO 3166-1 alpha-3
                   example: RUS
 
-    UserRegistrationResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Уникальный идентификатор пользователя
-          example: 550e8400-e29b-41d4-a716-446655440000
-        email:
-          type: string
-          format: email
-          description: Email пользователя
-          example: john.doe@example.com
-        first_name:
-          type: string
-          description: Имя
-          example: John
-        last_name:
-          type: string
-          description: Фамилия
-          example: Doe
-        status:
-          type: string
-          description: Статус учётной записи
-          example: PENDING
-        created:
-          type: string
-          format: date-time
-          description: Дата и время создания
-          example: 2024-01-01T00:00:00Z
-
-    IndividualInfoRequest:
+    IndividualInfoUpdateRequest:
       type: object
       properties:
         passport_number:
@@ -336,6 +309,68 @@ components:
           type: string
           description: Номер телефона
           example: "+79001234567"
+        first_name:
+          type: string
+          maxLength: 32
+          description: Имя
+          example: John
+        last_name:
+          type: string
+          maxLength: 32
+          description: Фамилия
+          example: Doe
+        secret_key:
+          type: string
+          maxLength: 32
+          description: Секретный ключ для идентификации клиента
+          example: my-secret-key
+        address:
+          type: object
+          properties:
+            address:
+              type: string
+              maxLength: 128
+              description: Улица и номер дома
+              example: ул. Ленина, 123
+            zip_code:
+              type: string
+              maxLength: 32
+              description: Почтовый индекс
+              example: "101000"
+            city:
+              type: string
+              maxLength: 32
+              description: Город
+              example: Москва
+            state:
+              type: string
+              maxLength: 32
+              description: Штат / регион
+              example: Московская область
+            country:
+              type: object
+              required:
+                - name
+                - alpha2
+                - alpha3
+              properties:
+                name:
+                  type: string
+                  maxLength: 32
+                  description: Название страны
+                  example: Россия
+                alpha2:
+                  type: string
+                  minLength: 2
+                  maxLength: 2
+                  description: Код страны ISO 3166-1 alpha-2
+                  example: RU
+                alpha3:
+                  type: string
+                  minLength: 3
+                  maxLength: 3
+                  description: Код страны ISO 3166-1 alpha-3
+                  example: RUS
 
     IndividualInfoResponse:
       type: object
