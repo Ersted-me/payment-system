@@ -35,7 +35,7 @@ public class IndividualService {
         log.info("Creating individual email: [{}]", request.getEmail());
 
         Country country = countryRepository.findCountryByAlpha3(request.getAddress().getCountry().getAlpha3())
-                .orElseThrow(() ->{
+                .orElseThrow(() -> {
                     log.warn("Country not found by alpha3: [{}]", request.getAddress().getCountry().getAlpha3());
                     return new ValidateException("Couldn't find the country by alpha3");
                 });
