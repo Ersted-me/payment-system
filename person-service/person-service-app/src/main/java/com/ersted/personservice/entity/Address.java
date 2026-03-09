@@ -5,12 +5,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Getter
 @Setter
+@Audited
 @Entity
 @Table(schema = "person", name = "addresses")
 public class Address {
@@ -22,6 +25,7 @@ public class Address {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "country_id")
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Country country;
 
     @Column(name = "address", length = 128)
@@ -36,7 +40,7 @@ public class Address {
     @Column(name = "state", length = 32)
     private String state;
 
-    @Column(name = "archived", nullable = false)
+    @Column(name = "archived")
     private OffsetDateTime archived;
 
     @CreationTimestamp

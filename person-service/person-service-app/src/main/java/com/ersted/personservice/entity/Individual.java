@@ -4,12 +4,14 @@ import com.ersted.personservice.entity.status.IndividualStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.envers.Audited;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Getter
 @Setter
+@Audited
 @Entity
 @Table(schema = "person", name = "individuals")
 public class Individual {
@@ -29,10 +31,10 @@ public class Individual {
     @Column(name = "phone_number", length = 32)
     private String phoneNumber;
 
-    @Column(name = "verified_at", nullable = false)
+    @Column(name = "verified_at")
     private OffsetDateTime verifiedAt;
 
-    @Column(name = "archived_at", nullable = false, updatable = false)
+    @Column(name = "archived_at")
     private OffsetDateTime archivedAt;
 
     @Enumerated(EnumType.STRING)

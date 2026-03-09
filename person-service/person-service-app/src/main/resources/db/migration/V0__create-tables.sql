@@ -21,7 +21,7 @@ CREATE TABLE person.addresses
     country_id INTEGER REFERENCES person.countries (id),
     address    VARCHAR(128),
     zip_code   VARCHAR(32),
-    archived   TIMESTAMP NOT NULL,
+    archived   TIMESTAMP,
     city       VARCHAR(32),
     state      VARCHAR(32)
 );
@@ -45,7 +45,7 @@ CREATE TABLE person.individuals
     user_id         UUID UNIQUE REFERENCES person.users (id),
     passport_number VARCHAR(32),
     phone_number    VARCHAR(32),
-    verified_at     TIMESTAMP NOT NULL,
-    archived_at     TIMESTAMP NOT NULL,
+    verified_at     TIMESTAMP,
+    archived_at     TIMESTAMP,
     status          VARCHAR(32)
 );

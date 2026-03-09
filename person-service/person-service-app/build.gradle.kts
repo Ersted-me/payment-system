@@ -23,6 +23,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
+	// Audit
+	implementation("org.hibernate.orm:hibernate-envers")
 
 	// Migration
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
@@ -30,10 +32,11 @@ dependencies {
 	runtimeOnly("org.postgresql:postgresql")
 
 	//Helpers
+	implementation("org.mapstruct:mapstruct:1.6.3")
 	compileOnly("org.projectlombok:lombok")
-	annotationProcessor("org.projectlombok:lombok")
 
 	// Swagger + OpenApiPlugin
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2")
 	implementation("com.fasterxml.jackson.core:jackson-databind")
 	implementation("jakarta.validation:jakarta.validation-api")
 	implementation("jakarta.annotation:jakarta.annotation-api")
@@ -42,6 +45,11 @@ dependencies {
 	// Tests
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+	//	Annotation processor
+	annotationProcessor("org.projectlombok:lombok")
+	annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
+	annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
 }
 
 tasks.withType<Test> {
