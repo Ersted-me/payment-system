@@ -1,41 +1,35 @@
 @startuml
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
 
-Container_Boundary(persons_service, "Persons Service") {
-    Component(individualController, "IndividualController", "REST Controller", "Обрабатывает HTTP-запросы клиента по /users/{id}/individual")
+Container_Boundary(person_service, "Person Service") {
 
-    Component(userService, "UserService", "Service", "Операции с учетными данными пользователя")
-    Component(addressService, "AddressService", "Service", "Операции с адресом пользователя")
-    Component(countryService, "CountriesService", "Service", "Операции со страной")
-    Component(individualService, "IndividualService", "Service", "Операции с профилем физ. лица")
+    Component(individualController, "IndividualController", "REST Controller", "Обрабатывает HTTP-запросы /individuals")
 
+    Component(individualService, "IndividualService", "Service", "Оркестрирует все операции над профилем физ. лица:\nсоздание, обновление, смена статуса, удаление.\nВключает логику работы с User и Address")
 
-    Component(userRepository, "UserRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице USERS")
-    Component(addressRepository, "AddressRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице ADDRESSES")
-    Component(countryRepository, "CountriesRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице COUNTRIES")
-    Component(individualRepository, "IndividualRepository", "Spring JPA Repository", "Генерирует SQL запросы к таблице INDIVIDUALS")
-    Component(audit, "Audit", "Hibernate Envers", "Отслеживание изменений данных во времени (аудита) в микросервисах")
+    Component(individualMapper, "IndividualMapper", "MapStruct", "Маппинг между Entity и DTO")
+
+    Component(individualRepository, "IndividualRepository", "Spring Data JPA", "CRUD операции над INDIVIDUALS.\nCascade сохраняет USER и ADDRESS")
+
+    Component(countryRepository, "CountryRepository", "Spring Data JPA", "Поиск страны по alpha2/alpha3")
+
+    Component(audit, "Audit", "Hibernate Envers", "Автоматический аудит изменений\nINDIVIDUALS, USERS, ADDRESSES")
 }
 
-Container(individuals_api, "Individuals Api", "Java, Spring Boot WebFlux", "Оркестратор: регистрация, логин, обновление токена, получение данных пользователя")
-Rel(individuals_api, individualController, "Получение / обновление / удаление информации по профилю физ. лица", "REST API")
-Rel(individualController, individualService, "")
+Container(individuals_api, "Individuals API", "Java, Spring Boot WebFlux", "Оркестратор")
+ContainerDb(person_db, "Person Database", "PostgreSQL", "Хранение профилей пользователей")
 
-Rel(userService, addressService, "")
-Rel(addressService, countryService, "")
-Rel(individualService, userService, "")
+Rel(individuals_api, individualController, "REST API", "HTTP/JSON")
 
-Rel(userService, userRepository, "")
-Rel(addressService, addressRepository, "")
-Rel(countryService, countryRepository, "")
-Rel(individualService, individualRepository, "")
+Rel(individualController, individualMapper, "Маппинг request → entity")
+Rel(individualController, individualService, "Вызов бизнес-операций")
+Rel(individualService, individualMapper, "Маппинг entity → response")
 
+Rel(individualService, individualRepository, "Сохранение / чтение Individual")
+Rel(individualService, countryRepository, "Поиск страны по alpha2")
 
-ContainerDb(person_database, "Person Database", "PostgreSQL", "Хранение информации по профилям пользователей")
-Rel(userRepository, person_database, "Запись / чтение данных", "SQL")
-Rel(addressRepository, person_database, "Запись / чтение данных", "SQL")
-Rel(countryRepository, person_database, "Запись / чтение данных", "SQL")
-Rel(individualRepository, person_database, "Запись / чтение данных", "SQL")
-
+Rel(individualRepository, person_db, "SQL", "JDBC")
+Rel(countryRepository, person_db, "SQL", "JDBC")
+Rel(audit, person_db, "Запись истории изменений", "SQL")
 
 @enduml

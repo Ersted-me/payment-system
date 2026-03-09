@@ -17,15 +17,15 @@ api -> api: Валидация запроса
 api --> client: status: 400 \n application\json \n error, status
 end
 
-api -> person: POST \n /v1/users \n Authorization: Bearer {service_token} \n application/json
-person -> personDb: Сохранение данных \n статус: PENDING, filled: false
+api -> person: POST \n /v1/individuals \n Authorization: Bearer {service_token} \n application/json
+person -> personDb: Сохранение данных \n статус: PENDING, filled: true
 personDb --> person: userId
-person --> api: status: 201 \n application/json \n location: /v1/users/{userId}
+person --> api: status: 201 \n location: /v1/individuals/{userId}
 api -> keycloak: POST \n /admin/realms/{realm}/users \n application\json \n email, password, userId
 keycloak -> keycloak: Создание нового пользователя
 keycloak --> api: status: 201
-api -> person: POST \n /v1/users/{userId}/active \n Authorization: Bearer {service_token}
-person -> personDb: Сохранение данных \n status: ACTIVE, filled: false
+api -> person: POST \n /v1/individuals/{userId}/active \n Authorization: Bearer {service_token}
+person -> personDb: Сохранение данных \n status: ACTIVE, verified_at: now
 personDb --> person: Подтверждение обновления статуса
 person --> api: status: 200
 
@@ -33,7 +33,7 @@ alt #FFCCCC Не удалось создать пользователя в Keycl
 keycloak -> keycloak: Создание нового пользователя
 keycloak --> api: status: 4xx, 5xx \n application/json
 api -> api: Обработка ошибки
-api -> person: POST \n /v1/users/{userId}/purge
+api -> person: POST \n /v1/individuals/{userId}/purge
 person -> personDb: Удаление "под чистую" пользователя по userId
 personDb --> person: Подтверждение удаления
 person --> api: status: 204

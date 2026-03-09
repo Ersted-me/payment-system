@@ -78,7 +78,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/IndividualRegistrationRequest"
+              $ref: "#/components/schemas/IndividualCreateProfileRequest"
       responses:
         "201":
           description: Профиль физлица успешно создан
@@ -205,7 +205,7 @@ components:
             status: FORBIDDEN
 
   schemas:
-    IndividualRegistrationRequest:
+    IndividualCreateProfileRequest:
       type: object
       required:
         - passport_number
@@ -453,5 +453,5 @@ components:
           type: string
           example: Ошибка валидации
         status:
-          type: integer
+          type: string
           example: BAD_REQUEST

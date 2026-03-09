@@ -26,7 +26,7 @@ api -> api: Обработка ошибки
 api --> client: status: 4xx,5xx \n application\json \n error, status
 end
 
-api -> person: POST \n /v1/users/{userId}/archive \n Authorization: Bearer {service_token} \n status: ARCHIVED, archived_at: now
+api -> person: POST \n /v1/individuals/{userId}/archive \n Authorization: Bearer {service_token} \n status: ARCHIVED, archived_at: now
 person -> personDb: обновление по userId, status: ARCHIVED, archived_at: now
 personDb --> person: Подтверждение обновления
 person --> api: status: 200

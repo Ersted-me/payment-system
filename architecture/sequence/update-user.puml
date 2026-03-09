@@ -15,8 +15,8 @@ api -> api: Валидация Bearer токена
 api --> client: status: 401 \n application\json \n error, status
 end
 
-api -> person: PATCH \n Authorization: Bearer {service_token} \n application\json \n /v1/users/{userId}/individual
-person -> personDb: обновление данных профиля \n filled: true, verified_at: now
+api -> person: PATCH \n Authorization: Bearer {service_token} \n application\json \n /v1/individuals/{userId}
+person -> personDb: обновление данных профиля
 personDb --> person: подтверждение обновления
 person --> api: status: 200 \n application/json \n {...}
 api --> client: status: 200 \n application/json \n {...}
