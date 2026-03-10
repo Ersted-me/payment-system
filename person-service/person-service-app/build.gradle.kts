@@ -25,6 +25,7 @@ dependencies {
 
 	//Observability
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	implementation("io.micrometer:micrometer-registry-prometheus")
 
 	// Audit
 	implementation("org.hibernate.orm:hibernate-envers")
