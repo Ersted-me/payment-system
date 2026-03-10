@@ -51,7 +51,7 @@ openApiGenerate {
 sourceSets {
     main {
         java {
-            srcDir(layout.buildDirectory.dir("/generated/openapi/src/main/java"))
+            srcDir(layout.buildDirectory.dir("generated/openapi/src/main/java"))
         }
     }
 }
@@ -77,7 +77,7 @@ publishing {
             name = "nexus"
             val nexusUrl = (findProperty("nexusUrl") as String?)
                 ?: System.getenv("NEXUS_URL")
-                ?: error("nexusUrl not set")
+                ?: return@maven
 
             url = uri(
                 if (version.toString().endsWith("SNAPSHOT"))

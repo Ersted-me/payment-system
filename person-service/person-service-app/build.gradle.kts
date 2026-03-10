@@ -96,7 +96,7 @@ openApiGenerate {
 sourceSets {
 	main {
 		java {
-			srcDir(layout.buildDirectory.dir("/generated/openapi/src/main/java"))
+			srcDir(layout.buildDirectory.dir("generated/openapi/src/main/java"))
 		}
 	}
 }
