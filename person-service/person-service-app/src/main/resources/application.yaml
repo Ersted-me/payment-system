@@ -23,3 +23,10 @@ spring:
       ddl-auto: validate
     open-in-view: false
     show-sql: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+        exclude: env, beans

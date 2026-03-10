@@ -23,6 +23,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
+	//Observability
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+
 	// Audit
 	implementation("org.hibernate.orm:hibernate-envers")
 
