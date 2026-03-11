@@ -28,6 +28,54 @@ services:
     networks:
       - payment-system-network
 
+  person-service-api:
+    build:
+      context: ./person-service
+      dockerfile: Dockerfile
+    container_name: person-service-api
+    labels:
+      - "monitoring.enabled=true"
+      - "monitoring.port=8080"
+      - "monitoring.path=/actuator/prometheus"
+    ports:
+      - "8083:8080"
+    environment:
+      DATABASE_URL: jdbc:postgresql://person-service-postgres:5432/person
+      DATABASE_USERNAME: person
+      DATABASE_PASSWORD: person
+      OTLP_TRACING_GRPC_ENDPOINT: http://alloy:4317
+    depends_on:
+      person-service-postgres:
+        condition: service_started
+#      keycloak:
+#        condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--spider", "http://localhost:8080/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment-system-network
+
+  person-service-postgres:
+    image: postgres:17
+    container_name: person-service-postgres
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: person
+      POSTGRES_USER: person
+      POSTGRES_PASSWORD: person
+    volumes:
+      - person_service_pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment-system-network
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.2
     container_name: individuals-keycloak
@@ -189,25 +237,8 @@ services:
         condition: service_started
       prometheus:
         condition: service_started
-    networks:
-      - payment-system-network
-
-  person-service-postgres:
-    image: postgres:17
-    container_name: person-service-postgres
-    ports:
-      - "5434:5432"
-    environment:
-      POSTGRES_DB: person
-      POSTGRES_USER: person
-      POSTGRES_PASSWORD: person
-    volumes:
-      - person_service_pg-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      tempo:
+        condition: service_started
     networks:
       - payment-system-network
 

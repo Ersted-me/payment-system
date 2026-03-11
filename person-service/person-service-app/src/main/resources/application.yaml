@@ -1,6 +1,8 @@
 spring:
   application:
-    name: person-service
+    name: person-service-api
+  main:
+    banner-mode: off
 
   datasource:
     url: ${DATABASE_URL}
@@ -22,7 +24,7 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-    show-sql: true
+    show-sql: false
 
 management:
   endpoints:
@@ -30,3 +32,31 @@ management:
       exposure:
         include: health, info, metrics, prometheus
         exclude: env, beans
+
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    enable:
+      http: true
+
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_TRACING_GRPC_ENDPOINT:http://alloy:4317}
+          transport: grpc
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false

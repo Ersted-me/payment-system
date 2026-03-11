@@ -24,6 +24,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
 	//Observability
+	implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("io.micrometer:micrometer-registry-prometheus")
 
@@ -38,6 +39,8 @@ dependencies {
 	//Helpers
 	implementation("org.mapstruct:mapstruct:1.6.3")
 	compileOnly("org.projectlombok:lombok")
+	implementation("net.logstash.logback:logstash-logback-encoder:9.0")
+
 
 	// Swagger + OpenApiPlugin
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2")
