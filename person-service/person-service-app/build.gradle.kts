@@ -1,3 +1,13 @@
+val versions = mapOf(
+	"spring-boot-dependencies" to "4.0.3",
+	"mapstruct" to "1.6.3",
+	"logstash-logback-encoder" to "9.0",
+	"springdoc-openapi-starter-webmvc-ui" to "3.0.2",
+	"swagger-annotations" to "2.2.45",
+	"lombok-mapstruct-binding" to "0.2.0",
+	"mapstruct-processor" to "1.6.3",
+)
+
 plugins {
 	java
 	idea
@@ -15,7 +25,7 @@ java {
 
 dependencyManagement {
 	imports {
-		mavenBom("org.springframework.boot:spring-boot-dependencies:4.0.3")
+		mavenBom("org.springframework.boot:spring-boot-dependencies:${versions["spring-boot-dependencies"]}")
 	}
 }
 
@@ -38,17 +48,16 @@ dependencies {
 	runtimeOnly("org.postgresql:postgresql")
 
 	//Helpers
-	implementation("org.mapstruct:mapstruct:1.6.3")
+	implementation("org.mapstruct:mapstruct:${versions["mapstruct"]}")
 	compileOnly("org.projectlombok:lombok")
-	implementation("net.logstash.logback:logstash-logback-encoder:9.0")
-
+	implementation("net.logstash.logback:logstash-logback-encoder:${versions["logstash-logback-encoder"]}")
 
 	// Swagger + OpenApiPlugin
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:${versions["springdoc-openapi-starter-webmvc-ui"]}")
 	implementation("com.fasterxml.jackson.core:jackson-databind")
 	implementation("jakarta.validation:jakarta.validation-api")
 	implementation("jakarta.annotation:jakarta.annotation-api")
-	implementation("io.swagger.core.v3:swagger-annotations:2.2.20")
+	implementation("io.swagger.core.v3:swagger-annotations:${versions["swagger-annotations"]}")
 
 	// Tests
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
@@ -56,8 +65,8 @@ dependencies {
 
 	//	Annotation processor
 	annotationProcessor("org.projectlombok:lombok")
-	annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
-	annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
+	annotationProcessor("org.projectlombok:lombok-mapstruct-binding:${versions["lombok-mapstruct-binding"]}")
+	annotationProcessor("org.mapstruct:mapstruct-processor:${versions["mapstruct-processor"]}")
 }
 
 tasks.withType<Test> {
