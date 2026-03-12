@@ -44,7 +44,7 @@ public class IndividualsController implements IndividualsApi {
 
     @Override
     public ResponseEntity<IndividualInfoResponse> individualsUserUuidGet(UUID userUuid) {
-        return ResponseEntity.ok(individualService.info(userUuid));
+        return ResponseEntity.ok(individualService.profileInfo(userUuid));
     }
 
     @Override

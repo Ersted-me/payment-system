@@ -1,3 +1,4 @@
+
 spring:
   application:
     name: person-service-api
@@ -45,6 +46,10 @@ management:
         http.server.requests: true
     enable:
       http: true
+
+  tracing:
+    sampling:
+      probability: 1.0
 
   opentelemetry:
     tracing:

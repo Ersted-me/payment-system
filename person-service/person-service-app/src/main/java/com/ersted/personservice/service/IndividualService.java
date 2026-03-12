@@ -1,5 +1,6 @@
 package com.ersted.personservice.service;
 
+import com.ersted.personservice.annotation.Counted;
 import com.ersted.personservice.entity.Country;
 import com.ersted.personservice.entity.Individual;
 import com.ersted.personservice.entity.status.IndividualStatus;
@@ -11,6 +12,7 @@ import com.ersted.personservice.model.IndividualInfoResponse;
 import com.ersted.personservice.model.IndividualInfoUpdateRequest;
 import com.ersted.personservice.repository.CountryRepository;
 import com.ersted.personservice.repository.IndividualRepository;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,8 @@ public class IndividualService {
 
     private final IndividualMapper individualMapper;
 
+    @Counted("person.service.api.individual.create")
+    @Observed(name = "individual.create", contextualName = "create-individual-profile")
     @Transactional
     public IndividualInfoResponse create(IndividualCreateProfileRequest request) {
         log.info("Creating individual email: [{}]", request.getEmail());
@@ -51,8 +55,10 @@ public class IndividualService {
         return individualMapper.map(individual);
     }
 
+    @Counted("person.service.api.individual.profileinfo")
+    @Observed(name = "individual.info", contextualName = "find-individual-profile-info")
     @Transactional(readOnly = true)
-    public IndividualInfoResponse info(UUID userUuid) {
+    public IndividualInfoResponse profileInfo(UUID userUuid) {
         return individualRepository.findWithDetailById(userUuid)
                 .map(individualMapper::map)
                 .orElseThrow(() -> {
@@ -61,6 +67,8 @@ public class IndividualService {
                 });
     }
 
+    @Counted("person.service.api.individual.update")
+    @Observed(name = "individual.update", contextualName = "update-individual-profile")
     @Transactional
     public IndividualInfoResponse update(UUID userUuid, IndividualInfoUpdateRequest request) {
 
@@ -83,6 +91,8 @@ public class IndividualService {
         return individualMapper.map(individual);
     }
 
+    @Counted("person.service.api.individual.active")
+    @Observed(name = "individual.active", contextualName = "active-individual-profile")
     @Transactional
     public void active(UUID userUuid) {
         Individual individual = individualRepository.findWithDetailById(userUuid)
@@ -94,12 +104,16 @@ public class IndividualService {
         log.info("Individual activated, id: [{}]", userUuid);
     }
 
+    @Counted("person.service.api.individual.purge")
+    @Observed(name = "individual.purge", contextualName = "purge-individual-profile")
     @Transactional
     public void purge(UUID userUuid) {
         log.warn("Purging individual, id: [{}]", userUuid);
         individualRepository.deleteById(userUuid);
     }
 
+    @Counted("person.service.api.individual.archive")
+    @Observed(name = "individual.archive", contextualName = "archive-individual-profile")
     @Transactional
     public void archive(UUID userUuid) {
         Individual individual = individualRepository.findById(userUuid)
