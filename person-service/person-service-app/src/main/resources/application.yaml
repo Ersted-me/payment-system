@@ -1,9 +1,15 @@
-
 spring:
   application:
     name: person-service-api
+
   main:
     banner-mode: off
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI}
 
   datasource:
     url: ${DATABASE_URL}

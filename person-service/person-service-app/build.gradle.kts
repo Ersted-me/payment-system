@@ -32,6 +32,7 @@ dependencyManagement {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 
 	//Observability
 	implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
