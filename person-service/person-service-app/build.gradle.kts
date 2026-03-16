@@ -6,6 +6,7 @@ val versions = mapOf(
 	"swagger-annotations" to "2.2.45",
 	"lombok-mapstruct-binding" to "0.2.0",
 	"mapstruct-processor" to "1.6.3",
+	"testcontainers" to "1.21.4",
 )
 
 plugins {
@@ -62,6 +63,10 @@ dependencies {
 
 	// Tests
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+	testImplementation("org.springframework.security:spring-security-test")
+	testImplementation("org.testcontainers:testcontainers")
+	testImplementation("org.testcontainers:junit-jupiter:${versions["testcontainers"]}")
+	testImplementation("org.testcontainers:postgresql:${versions["testcontainers"]}")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
 	//	Annotation processor

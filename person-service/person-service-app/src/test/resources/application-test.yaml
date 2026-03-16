@@ -1,0 +1,19 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9999/test-issuer
+  jpa:
+    properties:
+      "org.hibernate.envers.default_schema": person
+
+management:
+  tracing:
+    sampling:
+      probability: 0.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:9999/not-used
