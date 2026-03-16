@@ -45,10 +45,10 @@ docker-compose up postgres -d
 
 ## Переменные окружения
 
-| Переменная | Обязательная | Описание |
-|-----------|:---:|---------|
-| `DATABASE_URL` | ✓ | JDBC URL, например `jdbc:postgresql://localhost:5432/payment` |
-| `DATABASE_USERNAME` | ✓ | Пользователь БД |
-| `DATABASE_PASSWORD` | ✓ | Пароль БД |
+| Переменная | Обязательная | Описание                                                                |
+|-----------|:---:|-------------------------------------------------------------------------|
+| `DATABASE_URL` | ✓ | JDBC URL, например `jdbc:postgresql://localhost:5432/person`            |
+| `DATABASE_USERNAME` | ✓ | Пользователь БД                                                         |
+| `DATABASE_PASSWORD` | ✓ | Пароль БД                                                               |
 | `OAUTH2_ISSUER_URI` | ✓ | URI эмитента JWT, например `http://keycloak:8080/realms/payment-system` |
-| `OTLP_TRACING_GRPC_ENDPOINT` | — | Endpoint OTLP-экспортера трейсов (по умолчанию `http://alloy:4317`) |
+| `OTLP_TRACING_GRPC_ENDPOINT` | — | Endpoint OTLP-экспортера трейсов (по умолчанию `http://localhost:4317`) |

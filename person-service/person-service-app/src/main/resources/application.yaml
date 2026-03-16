@@ -61,7 +61,7 @@ management:
     tracing:
       export:
         otlp:
-          endpoint: ${OTLP_TRACING_GRPC_ENDPOINT:http://alloy:4317}
+          endpoint: ${OTLP_TRACING_GRPC_ENDPOINT:http://localhost:4317}
           transport: grpc
   logging:
     export:
