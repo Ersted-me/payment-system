@@ -2,6 +2,14 @@ FROM gradle:jdk25 as build
 
 WORKDIR /build
 
+ARG NEXUS_URL=http://host.docker.internal:8082/repository/maven-snapshots/
+ARG NEXUS_USERNAME=admin
+ARG NEXUS_PASSWORD=admin
+
+ENV NEXUS_URL=${NEXUS_URL}
+ENV NEXUS_USERNAME=${NEXUS_USERNAME}
+ENV NEXUS_PASSWORD=${NEXUS_PASSWORD}
+
 COPY build.gradle.kts ./
 COPY settings.gradle.kts ./
 COPY openapi ./openapi

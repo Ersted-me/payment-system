@@ -17,6 +17,7 @@ services:
       KEYCLOAK_CLIENT_ID: individuals-api
       KEYCLOAK_CLIENT_SECRET: 8wb8HtX44VRUfquzs08Fk1dDH74d9vKc
       OTLP_TRACING_GRPC_ENDPOINT: http://alloy:4317
+      PERSON_SERVICE_URL: http://person-service-api:8080
     depends_on:
       keycloak:
         condition: service_started
