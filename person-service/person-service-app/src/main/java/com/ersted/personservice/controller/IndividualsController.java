@@ -27,7 +27,7 @@ public class IndividualsController implements IndividualsApi {
         var dto = individualService.create(individualCreateProfileRequest);
         return ResponseEntity
                 .created(URI.create("/v1/individuals/" + dto.getId()))
-                .build();
+                .body(dto);
     }
 
     @Override
