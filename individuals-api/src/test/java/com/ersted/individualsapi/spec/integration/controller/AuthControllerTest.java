@@ -8,6 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import java.util.Map;
+import java.util.UUID;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AuthControllerTest extends LifecycleSpecification {
@@ -17,7 +21,24 @@ class AuthControllerTest extends LifecycleSpecification {
         var email = "testSuccessfully@test.com";
         var password = "password123";
 
-        var registrationRequest = new UserRegistrationRequest(email, password, password);
+        UUID individualId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        wireMock.stubFor(post(urlEqualTo("/individuals"))
+                .willReturn(aResponse()
+                        .withStatus(201)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
+                                {
+                                  "id": "%s",
+                                  "user_id": "%s"
+                                }
+                                """.formatted(individualId, userId))));
+
+        wireMock.stubFor(post(urlMatching("/individuals/.+/active"))
+                .willReturn(aResponse().withStatus(204)));
+
+        var registrationRequest = buildRegistrationRequest(email, password, password);
 
         WebTestClient.ResponseSpec exchange = webTestClient.post()
                 .uri("/v1/auth/registration")
@@ -42,7 +63,7 @@ class AuthControllerTest extends LifecycleSpecification {
         var password = "password123";
         var differentConfirmPassword = "password";
 
-        var registrationRequest = new UserRegistrationRequest(email, password, differentConfirmPassword);
+        var registrationRequest = buildRegistrationRequest(email, password, differentConfirmPassword);
 
         WebTestClient.ResponseSpec exchange = webTestClient.post()
                 .uri("/v1/auth/registration")
@@ -64,8 +85,25 @@ class AuthControllerTest extends LifecycleSpecification {
         var email = "test@test.com";
         var password = "password123";
 
-        keycloakClient.createUser(email, password).block();
-        var registrationRequest = new UserRegistrationRequest(email, password, password);
+        UUID individualId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        wireMock.stubFor(post(urlEqualTo("/individuals"))
+                .willReturn(aResponse()
+                        .withStatus(201)
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
+                                {
+                                  "id": "%s",
+                                  "user_id": "%s"
+                                }
+                                """.formatted(individualId, userId))));
+
+        wireMock.stubFor(post(urlMatching("/individuals/.+/purge"))
+                .willReturn(aResponse().withStatus(204)));
+
+        keycloakClient.createUser(email, password, Map.of()).block();
+        var registrationRequest = buildRegistrationRequest(email, password, password);
 
         WebTestClient.ResponseSpec exchange = webTestClient.post()
                 .uri("/v1/auth/registration")
@@ -88,7 +126,7 @@ class AuthControllerTest extends LifecycleSpecification {
         var email = "loginflowuser@test.com";
         var password = "password123";
 
-        keycloakClient.createUser(email, password).block();
+        keycloakClient.createUser(email, password, Map.of()).block();
         var loginRequest = new UserLoginRequest(email, password);
 
 
@@ -115,7 +153,7 @@ class AuthControllerTest extends LifecycleSpecification {
         var password = "password123";
         var wrongPassword = "wrongPassword";
 
-        keycloakClient.createUser(email, password).block();
+        keycloakClient.createUser(email, password, Map.of()).block();
         var loginRequest = new UserLoginRequest(email, wrongPassword);
 
 
@@ -139,7 +177,7 @@ class AuthControllerTest extends LifecycleSpecification {
         var email = "refreshtokenflow@test.com";
         var password = "password123";
 
-        keycloakClient.createUser(email, password).block();
+        keycloakClient.createUser(email, password, Map.of()).block();
         var token = keycloakClient.requestToken(email, password).block();
         var tokenRefreshRequest = new TokenRefreshRequest(token.getRefreshToken());
 
@@ -188,7 +226,7 @@ class AuthControllerTest extends LifecycleSpecification {
         var email = "userinfoflow@test.com";
         var password = "password123";
 
-        keycloakClient.createUser(email, password).block();
+        keycloakClient.createUser(email, password, Map.of()).block();
         var token = keycloakClient.requestToken(email, password).block();
 
         WebTestClient.ResponseSpec exchange = webTestClient.get()
@@ -222,6 +260,13 @@ class AuthControllerTest extends LifecycleSpecification {
                     assertEquals(401, response.getStatus());
                     assertNotNull(response.getError());
                 });
+    }
+
+    private UserRegistrationRequest buildRegistrationRequest(String email, String password, String confirmPassword) {
+        var country = new UserRegistrationRequestProfileAddressCountry("Russia", "RU", "RUS");
+        var address = new UserRegistrationRequestProfileAddress("Test Street 1", "123456", "Moscow", "Moscow", country);
+        var profile = new UserRegistrationRequestProfile("AB123456", "+71234567890", email, "John", "Doe", "secret123", address);
+        return new UserRegistrationRequest(email, password, confirmPassword, profile);
     }
 
 }

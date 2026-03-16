@@ -1,12 +1,16 @@
 package com.ersted.individualsapi.spec.service;
 
 import com.ersted.individualsapi.client.KeycloakClient;
+import com.ersted.individualsapi.client.PersonServiceClient;
 import com.ersted.individualsapi.dto.TokenResponse;
 import com.ersted.individualsapi.dto.UserRegistrationRequest;
 import com.ersted.individualsapi.exception.KeycloakClientConflictException;
 import com.ersted.individualsapi.exception.ValidationException;
+import com.ersted.individualsapi.mapper.IndividualMapper;
 import com.ersted.individualsapi.service.TokenService;
 import com.ersted.individualsapi.service.UserService;
+import com.ersted.personservice.sdk.model.IndividualCreateProfileRequest;
+import com.ersted.personservice.sdk.model.IndividualInfoResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,7 +19,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +30,12 @@ class UserServiceTest {
 
     @Mock
     private KeycloakClient client;
+
+    @Mock
+    private PersonServiceClient personServiceClient;
+
+    @Mock
+    private IndividualMapper individualMapper;
 
     @Mock
     private TokenService tokenService;
@@ -36,8 +49,13 @@ class UserServiceTest {
         UserRegistrationRequest request = new UserRegistrationRequest(
                 "test@test.com",
                 "password",
-                "password"
+                "password",
+                null
         );
+
+        IndividualInfoResponse individualInfo = new IndividualInfoResponse();
+        individualInfo.setId(UUID.randomUUID());
+        individualInfo.setUserId(UUID.randomUUID());
 
         TokenResponse expectedToken = new TokenResponse();
         expectedToken.setAccessToken("access-token");
@@ -45,10 +63,11 @@ class UserServiceTest {
         expectedToken.setExpiresIn(300);
         expectedToken.setTokenType("Bearer");
 
-        when(client.createUser(request.getEmail(), request.getPassword()))
-                .thenReturn(Mono.empty());
-        when(tokenService.login(request.getEmail(), request.getPassword()))
-                .thenReturn(Mono.just(expectedToken));
+        when(individualMapper.map(any())).thenReturn(new IndividualCreateProfileRequest());
+        when(personServiceClient.createProfile(any())).thenReturn(Mono.just(individualInfo));
+        when(client.createUser(anyString(), anyString(), anyMap())).thenReturn(Mono.empty());
+        when(personServiceClient.activateProfile(any())).thenReturn(Mono.empty());
+        when(tokenService.login(request.getEmail(), request.getPassword())).thenReturn(Mono.just(expectedToken));
 
         // When
         StepVerifier.create(userService.register(request))
@@ -62,7 +81,9 @@ class UserServiceTest {
                 .verifyComplete();
 
         // Verify
-        verify(client).createUser("test@test.com", "password");
+        verify(personServiceClient).createProfile(any());
+        verify(client).createUser(eq("test@test.com"), eq("password"), anyMap());
+        verify(personServiceClient).activateProfile(individualInfo.getId());
         verify(tokenService).login("test@test.com", "password");
     }
 
@@ -83,8 +104,7 @@ class UserServiceTest {
                 )
                 .verify();
 
-        verifyNoInteractions(client);
-        verifyNoInteractions(tokenService);
+        verifyNoInteractions(client, personServiceClient, tokenService);
     }
 
     @Test
@@ -95,8 +115,15 @@ class UserServiceTest {
         request.setPassword("password123");
         request.setConfirmPassword("password123");
 
-        when(client.createUser(request.getEmail(), request.getPassword()))
+        IndividualInfoResponse individualInfo = new IndividualInfoResponse();
+        individualInfo.setId(UUID.randomUUID());
+        individualInfo.setUserId(UUID.randomUUID());
+
+        when(individualMapper.map(any())).thenReturn(new IndividualCreateProfileRequest());
+        when(personServiceClient.createProfile(any())).thenReturn(Mono.just(individualInfo));
+        when(client.createUser(anyString(), anyString(), anyMap()))
                 .thenReturn(Mono.error(new KeycloakClientConflictException("User already exists")));
+        when(personServiceClient.purgeProfile(any())).thenReturn(Mono.empty());
 
         // When
         StepVerifier.create(userService.register(request))
@@ -104,7 +131,8 @@ class UserServiceTest {
                 .expectError(KeycloakClientConflictException.class)
                 .verify();
 
-        verify(client).createUser("existing@test.com", "password123");
+        verify(client).createUser(eq("existing@test.com"), eq("password123"), anyMap());
+        verify(personServiceClient).purgeProfile(individualInfo.getId());
         verifyNoInteractions(tokenService);
     }
 
@@ -116,7 +144,13 @@ class UserServiceTest {
         request.setPassword("password123");
         request.setConfirmPassword("password123");
 
-        when(client.createUser(request.getEmail(), request.getPassword()))
+        IndividualInfoResponse individualInfo = new IndividualInfoResponse();
+        individualInfo.setId(UUID.randomUUID());
+        individualInfo.setUserId(UUID.randomUUID());
+
+        when(individualMapper.map(any())).thenReturn(new IndividualCreateProfileRequest());
+        when(personServiceClient.createProfile(any())).thenReturn(Mono.just(individualInfo));
+        when(client.createUser(anyString(), anyString(), anyMap()))
                 .thenReturn(Mono.error(new RuntimeException("Keycloak error")));
 
         // When
@@ -124,7 +158,8 @@ class UserServiceTest {
                 .expectError(RuntimeException.class)
                 .verify();
 
-        verify(client).createUser("test@test.com", "password123");
+        verify(client).createUser(eq("test@test.com"), eq("password123"), anyMap());
+        verify(personServiceClient, never()).purgeProfile(any());
         verifyNoInteractions(tokenService);
     }
 
@@ -136,9 +171,14 @@ class UserServiceTest {
         request.setPassword("password123");
         request.setConfirmPassword("password123");
 
-        when(client.createUser(anyString(), anyString()))
-                .thenReturn(Mono.empty());
+        IndividualInfoResponse individualInfo = new IndividualInfoResponse();
+        individualInfo.setId(UUID.randomUUID());
+        individualInfo.setUserId(UUID.randomUUID());
 
+        when(individualMapper.map(any())).thenReturn(new IndividualCreateProfileRequest());
+        when(personServiceClient.createProfile(any())).thenReturn(Mono.just(individualInfo));
+        when(client.createUser(anyString(), anyString(), anyMap())).thenReturn(Mono.empty());
+        when(personServiceClient.activateProfile(any())).thenReturn(Mono.empty());
         when(tokenService.login(anyString(), anyString()))
                 .thenReturn(Mono.error(new RuntimeException("Login failed")));
 
@@ -147,7 +187,8 @@ class UserServiceTest {
                 .expectError(RuntimeException.class)
                 .verify();
 
-        verify(client).createUser("test@test.com", "password123");
+        verify(client).createUser(eq("test@test.com"), eq("password123"), anyMap());
+        verify(personServiceClient).activateProfile(individualInfo.getId());
         verify(tokenService).login("test@test.com", "password123");
     }
 

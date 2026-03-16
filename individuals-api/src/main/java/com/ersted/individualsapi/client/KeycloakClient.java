@@ -21,6 +21,7 @@ import reactor.util.retry.Retry;
 
 import java.net.ConnectException;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -56,10 +57,10 @@ public class KeycloakClient {
     }
 
     @Observed(name = "keycloakClient.createUser")
-    public Mono<Void> createUser(String email, String password) {
+    public Mono<Void> createUser(String email, String password, Map<String, List<String>> attributes) {
         return adminToken()
                 .doOnSubscribe(_ -> log.info("Creating user: {}", email))
-                .flatMap(token -> executeCreateUserRequest(email, password, token.getAccessToken()))
+                .flatMap(token -> executeCreateUserRequest(email, password, attributes, token.getAccessToken()))
                 .doOnSuccess(_ -> log.info("User created successfully: {}", email));
     }
 
@@ -73,9 +74,14 @@ public class KeycloakClient {
                 .doOnSuccess(_ -> log.info("Admin token obtained"));
     }
 
-    private Mono<Void> executeCreateUserRequest(String email, String password, String accessToken) {
+    private Mono<Void> executeCreateUserRequest(
+            String email,
+            String password,
+            Map<String, List<String>> attributes,
+            String accessToken
+    ) {
 
-        var request = buildCreateUserRequest(email, password);
+        var request = buildCreateUserRequest(email, password, attributes);
 
         return this.retrieve(
                 keycloakWebClient
@@ -145,7 +151,7 @@ public class KeycloakClient {
                 throwable instanceof ConnectException;
     }
 
-    private CreateKeycloakUserRequest buildCreateUserRequest(String email, String password) {
+    private CreateKeycloakUserRequest buildCreateUserRequest(String email, String password, Map<String, List<String>> attributes) {
         return CreateKeycloakUserRequest.builder()
                 .username(email)
                 .email(email)
@@ -159,6 +165,7 @@ public class KeycloakClient {
                                 .temporary(false)
                                 .build()
                 ))
+                .attributes(attributes)
                 .build();
     }
 

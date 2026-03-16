@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8084
 
 keycloak:
   url: ${KEYCLOAK_URL:http://localhost:8080}
@@ -17,6 +17,11 @@ keycloak:
     request-timeout-seconds: ${KEYCLOAK_REQUESTS_TIMEOUT_SECONDS:10}
 
 spring:
+  http:
+    serviceclient:
+      person-service:
+        base-url: ${PERSON_SERVICE_URL:http://localhost:8081}/v1
+
   main:
     banner-mode: off
 

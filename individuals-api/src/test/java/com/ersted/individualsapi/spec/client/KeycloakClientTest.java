@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -153,7 +154,7 @@ class KeycloakClientTest {
                 .setResponseCode(201));
 
         // When & Then
-        StepVerifier.create(keycloakClient.createUser("test@test.com", "password"))
+        StepVerifier.create(keycloakClient.createUser("test@test.com", "password", Map.of()))
                 .verifyComplete();
 
         // Verify requests
@@ -222,7 +223,7 @@ class KeycloakClientTest {
                         """));
 
         // When & Then
-        StepVerifier.create(keycloakClient.createUser("existing@test.com", "password"))
+        StepVerifier.create(keycloakClient.createUser("existing@test.com", "password", Map.of()))
                 .expectError(KeycloakClientConflictException.class)
                 .verify();
     }

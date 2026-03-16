@@ -3,6 +3,7 @@ package com.ersted.individualsapi.dto;
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -16,6 +17,7 @@ public class CreateKeycloakUserRequest {
     private Boolean enabled;
     private List<String> requiredActions;
     private List<Credential> credentials;
+    private Map<String, List<String>> attributes;
 
     @AllArgsConstructor
     @NoArgsConstructor

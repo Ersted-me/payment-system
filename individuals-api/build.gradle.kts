@@ -2,10 +2,18 @@ val versions = mapOf(
 	"spring-boot-dependencies" to "4.0.3",
 	"springdoc-openapi-starter-webflux-ui" to "3.0.2",
 	"swagger-annotations" to "2.2.45",
+
+	"person-service-sdk" to "1.0.0-SNAPSHOT",
+
+	"mapstruct" to "1.6.3",
 	"logstash-logback-encoder" to "9.0",
 
-	"mockwebserver" to "5.3.2", //5.3.2
-	"junit-jupiter" to "1.21.4"
+	"mockwebserver" to "5.3.2",
+	"junit-jupiter" to "1.21.4",
+	"wiremock" to "3.13.0",
+
+	"lombok-mapstruct-binding" to "0.2.0",
+	"mapstruct-processor" to "1.6.3",
 )
 
 plugins {
@@ -54,7 +62,11 @@ dependencies {
 	implementation("jakarta.annotation:jakarta.annotation-api")
 	implementation("io.swagger.core.v3:swagger-annotations:${versions["swagger-annotations"]}")
 
+//	SDK
+	implementation("com.ersted:person-service-sdk:${versions["person-service-sdk"]}")
+
 //	Helpers
+	implementation("org.mapstruct:mapstruct:${versions["mapstruct"]}")
 	implementation("org.projectlombok:lombok")
 	implementation("net.logstash.logback:logstash-logback-encoder:${versions["logstash-logback-encoder"]}")
 
@@ -65,10 +77,24 @@ dependencies {
 	testImplementation("com.squareup.okhttp3:mockwebserver:${versions["mockwebserver"]}")
 	testImplementation("org.testcontainers:testcontainers")
 	testImplementation("org.testcontainers:junit-jupiter:${versions["junit-jupiter"]}")
+	testImplementation("org.wiremock:wiremock-jetty12:${versions["wiremock"]}")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
 	//	Annotation processor
 	annotationProcessor("org.projectlombok:lombok")
+	annotationProcessor("org.projectlombok:lombok-mapstruct-binding:${versions["lombok-mapstruct-binding"]}")
+	annotationProcessor("org.mapstruct:mapstruct-processor:${versions["mapstruct-processor"]}")
+}
+
+configurations.testRuntimeClasspath {
+	resolutionStrategy.eachDependency {
+		if (requested.group == "org.eclipse.jetty" ||
+			requested.group == "org.eclipse.jetty.http2" ||
+			requested.group == "org.eclipse.jetty.http3") {
+			useVersion("12.0.16")
+			because("WireMock Jetty12 requires Jetty 12.0.x — incompatible with Spring Boot 4 managed 12.1.x")
+		}
+	}
 }
 
 tasks.withType<Test> {
