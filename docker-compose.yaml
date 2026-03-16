@@ -44,11 +44,12 @@ services:
       DATABASE_USERNAME: person
       DATABASE_PASSWORD: person
       OTLP_TRACING_GRPC_ENDPOINT: http://alloy:4317
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/payment-system
     depends_on:
       person-service-postgres:
         condition: service_started
-#      keycloak:
-#        condition: service_started
+      keycloak:
+        condition: service_started
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--spider", "http://localhost:8080/actuator/health" ]
       interval: 10s
