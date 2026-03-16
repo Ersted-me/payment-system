@@ -40,6 +40,18 @@ spring:
         jwt:
           issuer-uri: ${keycloak.url}/realms/${keycloak.realm}
 
+resilience4j:
+  circuitbreaker:
+    sliding-window-size: 10
+    failure-rate-threshold: 50
+    slow-call-rate-threshold: 80
+    slow-call-duration-threshold-seconds: 3
+    wait-duration-in-open-state-seconds: 10
+    permitted-calls-in-half-open-state: 3
+  bulkhead:
+    max-concurrent-calls: 20
+    max-wait-duration-ms: 0
+
 management:
   endpoints:
     web:
@@ -78,5 +90,3 @@ management:
     metrics:
       export:
         enabled: false
-server:
-  port: 8084

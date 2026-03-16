@@ -3,6 +3,8 @@ package com.ersted.individualsapi.exception.handler;
 
 import com.ersted.individualsapi.dto.ErrorResponse;
 import com.ersted.individualsapi.exception.*;
+import io.github.resilience4j.bulkhead.BulkheadFullException;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,6 +56,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PersonServiceException.class)
     public Mono<ResponseEntity<ErrorResponse>> handlePersonServiceException(PersonServiceException ex) {
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleCallNotPermittedException(CallNotPermittedException ex) {
+        return buildErrorResponse(HttpStatus.SERVICE_UNAVAILABLE, "Service temporarily unavailable");
+    }
+
+    @ExceptionHandler(BulkheadFullException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleBulkheadFullException(BulkheadFullException ex) {
+        return buildErrorResponse(HttpStatus.TOO_MANY_REQUESTS, "Too many concurrent requests");
     }
 
     private Mono<ResponseEntity<ErrorResponse>> buildErrorResponse(HttpStatus status, String error) {

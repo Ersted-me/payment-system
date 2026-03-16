@@ -5,6 +5,8 @@ val versions = mapOf(
 
 	"person-service-sdk" to "1.0.0-SNAPSHOT",
 
+	"resilience4j" to "2.3.0",
+
 	"mapstruct" to "1.6.3",
 	"logstash-logback-encoder" to "9.0",
 
@@ -73,7 +75,12 @@ dependencies {
 	implementation("io.swagger.core.v3:swagger-annotations:${versions["swagger-annotations"]}")
 
 //	SDK
-	implementation("com.ersted:person-service-sdk:${versions["person-service-sdk"]}")
+	implementation("com.ersted:person-service-sdk:1.0.0-SNAPSHOT")
+
+//	Resilience4j
+	implementation("io.github.resilience4j:resilience4j-circuitbreaker:${versions["resilience4j"]}")
+	implementation("io.github.resilience4j:resilience4j-bulkhead:${versions["resilience4j"]}")
+	implementation("io.github.resilience4j:resilience4j-reactor:${versions["resilience4j"]}")
 
 //	Helpers
 	implementation("org.mapstruct:mapstruct:${versions["mapstruct"]}")
