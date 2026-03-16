@@ -1,4 +1,4 @@
-FROM gradle:8.14.3-jdk24 as build
+FROM gradle:jdk25 as build
 
 WORKDIR /build
 
@@ -12,7 +12,7 @@ COPY src ./src
 RUN gradle bootJar --no-daemon
 
 
-FROM eclipse-temurin:24-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 WORKDIR /app
 RUN addgroup -S app && adduser -S app -G app
