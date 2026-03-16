@@ -64,8 +64,12 @@ public class KeycloakClient {
                 .doOnSuccess(_ -> log.info("User created successfully: {}", email));
     }
 
-    private Mono<TokenResponse> adminToken() {
+    public Mono<TokenResponse> adminToken() {
         return adminTokenProvider.getToken(this::fetchAdminToken);
+    }
+
+    public void invalidateAdminToken() {
+        adminTokenProvider.invalidate();
     }
 
     private Mono<TokenResponse> fetchAdminToken() {

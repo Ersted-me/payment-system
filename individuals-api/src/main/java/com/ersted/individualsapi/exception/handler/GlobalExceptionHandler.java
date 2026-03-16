@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import reactor.core.publisher.Mono;
 
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -38,6 +39,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ValidationException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleValidationException(ValidationException ex) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(PersonServiceNotFoundException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handlePersonServiceNotFoundException(PersonServiceNotFoundException ex) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(PersonServiceUnavailableException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handlePersonServiceUnavailableException(PersonServiceUnavailableException ex) {
+        return buildErrorResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
+    @ExceptionHandler(PersonServiceException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handlePersonServiceException(PersonServiceException ex) {
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 
     private Mono<ResponseEntity<ErrorResponse>> buildErrorResponse(HttpStatus status, String error) {

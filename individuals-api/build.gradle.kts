@@ -35,6 +35,16 @@ java {
 
 repositories {
 	mavenLocal()
+	maven {
+		url = uri(System.getenv("NEXUS_URL")
+			?: "http://localhost:8082/repository/maven-snapshots/")
+
+		credentials {
+			username = System.getenv("NEXUS_USERNAME") ?: "admin"
+			password = System.getenv("NEXUS_PASSWORD") ?: "admin"
+		}
+		isAllowInsecureProtocol = true
+	}
 	mavenCentral()
 }
 

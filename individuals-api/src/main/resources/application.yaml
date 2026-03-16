@@ -1,6 +1,3 @@
-server:
-  port: 8084
-
 keycloak:
   url: ${KEYCLOAK_URL:http://localhost:8080}
   realm: ${KEYCLOAK_REALM:payment-system}
@@ -20,7 +17,7 @@ spring:
   http:
     serviceclient:
       person-service:
-        base-url: ${PERSON_SERVICE_URL:http://localhost:8081}/v1
+        base-url: ${PERSON_SERVICE_URL:http://localhost:8083}/v1
 
   main:
     banner-mode: off
@@ -44,14 +41,16 @@ spring:
           issuer-uri: ${keycloak.url}/realms/${keycloak.realm}
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+        exclude: env, beans
+
   prometheus:
     metrics:
       export:
         enabled: true
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus
   metrics:
     tags:
       application: ${spring.application.name}
@@ -61,17 +60,23 @@ management:
     enable:
       http: true
 
+  tracing:
+    sampling:
+      probability: 1.0
 
-otel:
-  service:
-    name: ${spring.application.name}
-  traces:
-    exporter: otlp
-  metrics:
-    exporter: none
-  logs:
-    exporter: none
-  exporter:
-    otlp:
-      endpoint: ${OTLP_TRACING_GRPC_ENDPOINT:http://alloy:4317}
-      protocol: grpc
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTLP_TRACING_GRPC_ENDPOINT:http://localhost:4317}
+          transport: grpc
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
+server:
+  port: 8084
