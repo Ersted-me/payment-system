@@ -9,6 +9,7 @@ dependencies {
 
     api("org.springframework:spring-web")
     api("org.springframework:spring-context")
+    api("io.projectreactor:reactor-core")
 
     api("com.fasterxml.jackson.core:jackson-databind")
     api("jakarta.validation:jakarta.validation-api")
@@ -32,6 +33,7 @@ openApiGenerate {
 
         "useSpringBoot4"        to "true",
         "useJackson3"           to "true",
+        "reactive"              to "true",
 
         "interfaceOnly"         to "true",
         "skipDefaultInterface"  to "true",

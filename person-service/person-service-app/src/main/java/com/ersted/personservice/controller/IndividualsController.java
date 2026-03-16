@@ -21,7 +21,7 @@ public class IndividualsController implements IndividualsApi {
     private final IndividualService individualService;
 
     @Override
-    public ResponseEntity<IndividualInfoResponse> individualsPost(
+    public ResponseEntity<IndividualInfoResponse> createIndividual(
             IndividualCreateProfileRequest individualCreateProfileRequest
     ) {
         var dto = individualService.create(individualCreateProfileRequest);
@@ -31,29 +31,29 @@ public class IndividualsController implements IndividualsApi {
     }
 
     @Override
-    public ResponseEntity<Void> individualsUserUuidActivePost(UUID userUuid) {
+    public ResponseEntity<Void> activateIndividual(UUID userUuid) {
         individualService.active(userUuid);
         return ResponseEntity.ok().build();
     }
 
     @Override
-    public ResponseEntity<Void> individualsUserUuidArchivePost(UUID userUuid) {
+    public ResponseEntity<Void> archiveIndividual(UUID userUuid) {
         individualService.archive(userUuid);
         return ResponseEntity.ok().build();
     }
 
     @Override
-    public ResponseEntity<IndividualInfoResponse> individualsUserUuidGet(UUID userUuid) {
+    public ResponseEntity<IndividualInfoResponse> getIndividual(UUID userUuid) {
         return ResponseEntity.ok(individualService.profileInfo(userUuid));
     }
 
     @Override
-    public ResponseEntity<IndividualInfoResponse> individualsUserUuidPatch(UUID userUuid, IndividualInfoUpdateRequest individualInfoUpdateRequest) {
+    public ResponseEntity<IndividualInfoResponse> updateIndividual(UUID userUuid, IndividualInfoUpdateRequest individualInfoUpdateRequest) {
         return ResponseEntity.ok(individualService.update(userUuid, individualInfoUpdateRequest));
     }
 
     @Override
-    public ResponseEntity<Void> individualsUserUuidPurgePost(UUID userUuid) {
+    public ResponseEntity<Void> purgeIndividual(UUID userUuid) {
         individualService.purge(userUuid);
         return ResponseEntity.noContent().build();
     }

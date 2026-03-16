@@ -14,6 +14,7 @@ security:
 paths:
   /individuals/{userUuid}/archive:
     post:
+      operationId: archiveIndividual
       summary: Перевод пользователя в статус "ARCHIVED"
       tags:
         - Individuals
@@ -33,6 +34,7 @@ paths:
 
   /individuals/{userUuid}/active:
     post:
+      operationId: activateIndividual
       summary: Перевод пользователя в статус "ACTIVE"
       tags:
         - Individuals
@@ -52,6 +54,7 @@ paths:
 
   /individuals/{userUuid}/purge:
     post:
+      operationId: purgeIndividual
       summary: Удаление данных пользователя из системы
       tags:
         - Individuals
@@ -69,6 +72,7 @@ paths:
 
   /individuals:
     post:
+      operationId: createIndividual
       summary: Создание профиля пользователя в статусе "PENDING"
       tags:
         - Individuals
@@ -99,6 +103,7 @@ paths:
 
   /individuals/{userUuid}:
     get:
+      operationId: getIndividual
       summary: Получение информации по профилю физлица
       tags:
         - Individuals
@@ -126,6 +131,7 @@ paths:
                 status: NOT_FOUND
 
     patch:
+      operationId: updateIndividual
       summary: Обновление профиля физлица
       tags:
         - Individuals
@@ -374,6 +380,13 @@ components:
 
     IndividualInfoResponse:
       type: object
+      required:
+        - id
+        - user_id
+        - passport_number
+        - phone_number
+        - status
+        - created
       properties:
         id:
           type: string
