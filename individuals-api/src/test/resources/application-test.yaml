@@ -1,0 +1,9 @@
+management:
+  tracing:
+    sampling:
+      probability: 0.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:9999/not-used
