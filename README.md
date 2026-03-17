@@ -4,10 +4,10 @@
 
 ## Сервисы
 
-| Сервис | Описание |
-|--------|----------|
-| [`individuals-api`](./individuals-api/README.md) | Реактивный REST API — регистрация, аутентификация, управление токенами |
-| [`person-service`](./person-service/README.md) | Хранение и управление профилями физических лиц |
+| Сервис | Описание | OpenAPI |
+|--------|----------|---------|
+| [`individuals-api`](./individuals-api/README.md) | Реактивный REST API — регистрация, аутентификация, управление токенами | [`individuals-api.yaml`](./individuals-api/openapi/individuals-api.yaml) |
+| [`person-service`](./person-service/README.md) | Хранение и управление профилями физических лиц | [`person-service-api.yaml`](./person-service/openapi/person-service-api.yaml) |
 
 ## Архитектура
 
