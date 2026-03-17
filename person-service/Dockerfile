@@ -2,6 +2,14 @@ FROM gradle:jdk25 as build
 
 WORKDIR /build
 
+ARG NEXUS_URL=http://host.docker.internal:8082
+ARG NEXUS_USERNAME=admin
+ARG NEXUS_PASSWORD=admin
+
+ENV NEXUS_URL=${NEXUS_URL}
+ENV NEXUS_USERNAME=${NEXUS_USERNAME}
+ENV NEXUS_PASSWORD=${NEXUS_PASSWORD}
+
 COPY build.gradle.kts ./
 COPY settings.gradle.kts ./
 COPY openapi ./openapi
@@ -13,6 +21,7 @@ RUN gradle dependencies --no-daemon
 
 COPY person-service-app/src ./person-service-app/src
 
+RUN gradle :person-service-sdk:openApiGenerate :person-service-sdk:publish --no-daemon
 RUN gradle :person-service-app:openApiGenerate :person-service-app:bootJar --no-daemon
 
 
