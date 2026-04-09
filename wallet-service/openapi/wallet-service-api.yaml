@@ -1,0 +1,593 @@
+openapi: 3.0.0
+info:
+  title: Transaction Service API
+  version: 1.1.1
+servers:
+  - url: http://localhost:8080/v1
+
+paths:
+  # Wallets
+  /wallets:
+    post:
+      summary: Создание кошелька пользователя
+      operationId: createWallet
+      tags:
+        - Wallets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWalletRequest'
+      responses:
+        '201':
+          description: Кошелёк успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wallets/{walletUuid}:
+    get:
+      summary: Получение информации о кошельке
+      operationId: getWalletInfo
+      tags:
+        - Wallets
+      parameters:
+        - name: walletUuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Данные кошелька
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
+        '404':
+          description: Кошелёк не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wallets/user/{userUuid}:
+    get:
+      summary: Получение всех кошельков пользователя
+      operationId: getAllWalletsInfo
+      tags:
+        - Wallets
+      parameters:
+        - name: userUuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список кошельков пользователя
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WalletResponse'
+
+  # Transactions
+  /transactions/{type}/init:
+    post:
+      summary: Инициализация транзакции (без создания)
+      operationId: initTransaction
+      tags:
+        - Transactions
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PaymentType'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitTransactionRequest'
+
+      responses:
+        '200':
+          description: Условия транзакции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionInitResponse'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /transactions/{type}/confirm:
+    post:
+      summary: Подтверждение и запуск транзакции
+      tags:
+        - Transactions
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PaymentType'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmTransactionRequest'
+      responses:
+        '200':
+          description: Транзакция подтверждена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionConfirmResponse'
+        '400':
+          description: Ошибка подтверждения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /transactions/{transactionUuid}/status:
+    get:
+      summary: Получение статуса транзакции
+      operationId: transactionStatus
+      tags:
+        - Transactions
+      parameters:
+        - name: transactionUuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Статус и детали транзакции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionStatusResponse'
+        '404':
+          description: Транзакция не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /transactions:
+    get:
+      summary: Поиск транзакций по фильтрам с пагинацией
+      operationId: findTransactions
+      tags:
+        - Transactions
+      parameters:
+        - in: query
+          name: userUid
+          schema:
+            type: string
+        - in: query
+          name: walletUid
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            $ref: '#/components/schemas/PaymentType'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/TransactionStatus'
+        - in: query
+          name: dateFrom
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: dateTo
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Список транзакций
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionStatusResponse'
+
+components:
+  schemas:
+
+    CreateWalletRequest:
+      type: object
+      required:
+        - name
+        - walletTypeUid
+        - userUuid
+      properties:
+        name:
+          type: string
+          maxLength: 32
+          example: Основной кошелёк
+        walletTypeUid:
+          type: string
+          format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        userUuid:
+          type: string
+          format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+
+    WalletResponse:
+      type: object
+      required:
+        - uuid
+        - createdAt
+        - name
+        - userUuid
+        - walletType
+        - status
+        - balance
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+          maxLength: 32
+          example: Основной кошелёк
+        userUuid:
+          type: string
+          format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        balance:
+          type: number
+          format: decimal
+          example: 1500.00
+        walletType:
+          type: object
+          required:
+            - uuid
+            - name
+            - currencyCode
+          properties:
+            uuid:
+              type: string
+              format: uuid
+            name:
+              type: string
+              maxLength: 32
+              example: Личный USD
+            currencyCode:
+              type: string
+              maxLength: 3
+              example: USD
+        status:
+          type: string
+          maxLength: 30
+          example: ACTIVE
+
+    DepositInitRequest:
+      type: object
+      required:
+        - type
+        - walletUuid
+        - amount
+        - paymentMethodId
+      properties:
+        type:
+          type: string
+        walletUuid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 500.00
+        paymentMethodId:
+          type: integer
+          format: int64
+          example: 42
+        comment:
+          type: string
+          maxLength: 256
+          nullable: true
+
+    WithdrawalInitRequest:
+      type: object
+      required:
+        - type
+        - walletUuid
+        - amount
+        - paymentMethodId
+      properties:
+        type:
+          type: string
+        walletUuid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 200.00
+        paymentMethodId:
+          type: integer
+          format: int64
+          example: 42
+        comment:
+          type: string
+          maxLength: 256
+          nullable: true
+
+    TransferInitRequest:
+      type: object
+      required:
+        - type
+        - walletUuid
+        - targetWalletUuid
+        - amount
+      properties:
+        type:
+          type: string
+        walletUuid:
+          type: string
+          format: uuid
+        targetWalletUuid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 100.00
+        comment:
+          type: string
+          maxLength: 256
+          nullable: true
+
+    TransactionInitResponse:
+      type: object
+      properties:
+        walletUuid:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [DEPOSIT, WITHDRAWAL, TRANSFER]
+        amount:
+          type: number
+          format: decimal
+          example: 500.00
+        fee:
+          type: number
+          format: decimal
+          nullable: true
+          example: 5.00
+        currencyCode:
+          type: string
+          maxLength: 3
+          example: USD
+
+    DepositConfirmRequest:
+      type: object
+      required:
+        - type
+        - walletUuid
+        - amount
+        - paymentMethodId
+      properties:
+        type:
+          type: string
+        walletUuid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 500.00
+        paymentMethodId:
+          type: integer
+          format: int64
+          example: 42
+        comment:
+          type: string
+          maxLength: 256
+          nullable: true
+
+    WithdrawalConfirmRequest:
+      type: object
+      required:
+        - type
+        - walletUuid
+        - amount
+        - paymentMethodId
+      properties:
+        type:
+          type: string
+        walletUuid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 200.00
+        paymentMethodId:
+          type: integer
+          format: int64
+          example: 42
+        comment:
+          type: string
+          maxLength: 256
+          nullable: true
+
+    TransferConfirmRequest:
+      type: object
+      required:
+        - type
+        - walletUuid
+        - targetWalletUuid
+        - amount
+      properties:
+        type:
+          type: string
+        walletUuid:
+          type: string
+          format: uuid
+        targetWalletUuid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 100.00
+        comment:
+          type: string
+          maxLength: 256
+          nullable: true
+
+    TransactionConfirmResponse:
+      type: object
+      properties:
+        uid:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        userUid:
+          type: string
+          format: uuid
+        walletUuid:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+        type:
+          type: string
+          enum: [DEPOSIT, WITHDRAWAL, TRANSFER]
+        status:
+          type: string
+          maxLength: 32
+          example: PENDING
+        comment:
+          type: string
+          maxLength: 256
+          nullable: true
+        fee:
+          type: number
+          format: decimal
+          nullable: true
+        targetWalletUuid:
+          type: string
+          format: uuid
+          nullable: true
+        paymentMethodId:
+          type: integer
+          format: int64
+          nullable: true
+        failureReason:
+          type: string
+          maxLength: 256
+          nullable: true
+
+    TransactionStatusResponse:
+      type: object
+      required:
+        - uuid
+        - status
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        status:
+          type: string
+          maxLength: 32
+          example: COMPLETED
+        failureReason:
+          type: string
+          maxLength: 256
+          nullable: true
+
+    InitTransactionRequest:
+      oneOf:
+        - $ref: '#/components/schemas/DepositInitRequest'
+        - $ref: '#/components/schemas/WithdrawalInitRequest'
+        - $ref: '#/components/schemas/TransferInitRequest'
+      discriminator:
+        propertyName: type
+        mapping:
+          deposit: '#/components/schemas/DepositInitRequest'
+          withdrawal: '#/components/schemas/WithdrawalInitRequest'
+          transfer: '#/components/schemas/TransferInitRequest'
+
+    ConfirmTransactionRequest:
+      oneOf:
+        - $ref: '#/components/schemas/DepositConfirmRequest'
+        - $ref: '#/components/schemas/WithdrawalConfirmRequest'
+        - $ref: '#/components/schemas/TransferConfirmRequest'
+      discriminator:
+        propertyName: type
+        mapping:
+          deposit: '#/components/schemas/DepositConfirmRequest'
+          withdrawal: '#/components/schemas/WithdrawalConfirmRequest'
+          transfer: '#/components/schemas/TransferConfirmRequest'
+
+    PaymentType:
+      type: string
+      enum: [DEPOSIT, WITHDRAWAL, TRANSFER]
+
+    TransactionStatus:
+      type: string
+      enum: [ PENDING, COMPLETED, FAILED ]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Ошибка валидации
+        status:
+          type: string
+          example: BAD_REQUEST
