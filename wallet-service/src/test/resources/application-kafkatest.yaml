@@ -1,0 +1,8 @@
+outbox:
+  scheduler:
+    fixed-delay-ms: 86400000
+
+spring:
+  kafka:
+    properties:
+      schema.registry.url: mock://test
