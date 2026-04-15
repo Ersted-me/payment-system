@@ -1,0 +1,11 @@
+{
+  "namespace": "com.ersted.walletservice.dto.kafka",
+  "type": "record",
+  "name": "WithdrawalResultEvent",
+  "fields": [
+    {"name": "transactionId",  "type": {"type": "string", "logicalType": "uuid"}},
+    {"name": "status",         "type": "string"},
+    {"name": "failureReason",  "type": ["null", "string"], "default": null},
+    {"name": "timestamp",      "type": {"type": "long",   "logicalType": "timestamp-millis"}}
+  ]
+}

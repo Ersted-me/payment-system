@@ -13,6 +13,7 @@ import com.ersted.walletservice.service.OutboxService;
 import com.ersted.walletservice.service.WalletService;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -65,14 +66,14 @@ public class DepositStrategy implements TransactionStrategy, CompletableStrategy
         tx.setStatus(com.ersted.walletservice.entity.TransactionStatus.PENDING);
         transactionRepository.save(tx);
 
-        DepositRequestedEvent event = new DepositRequestedEvent(
-                tx.getUuid(),
-                tx.getUserUuid(),
-                tx.getWallet().getUuid(),
-                tx.getAmount(),
-                tx.getWallet().getWalletType().getCurrencyCode(),
-                Instant.now()
-        );
+        DepositRequestedEvent event = DepositRequestedEvent.newBuilder()
+                .setTransactionId(tx.getUuid())
+                .setUserId(tx.getUserUuid())
+                .setWalletId(tx.getWallet().getUuid())
+                .setAmount(tx.getAmount().setScale(4, RoundingMode.HALF_UP))
+                .setCurrency(tx.getWallet().getWalletType().getCurrencyCode())
+                .setTimestamp(Instant.now())
+                .build();
         outboxService.save(depositTopic, tx.getUuid().toString(), event);
 
         return tx;

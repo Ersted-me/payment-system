@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -81,15 +82,15 @@ public class WithdrawalStrategy implements TransactionStrategy, CompletableStrat
         deductBalance(wallet, withdrawal.getAmount().add(fee));
         transactionRepository.save(tx);
 
-        WithdrawalRequestedEvent event = new WithdrawalRequestedEvent(
-                tx.getUuid(),
-                tx.getUserUuid(),
-                tx.getWallet().getUuid(),
-                tx.getAmount(),
-                tx.getWallet().getWalletType().getCurrencyCode(),
-                withdrawal.getPaymentMethodId().toString(),
-                Instant.now()
-        );
+        WithdrawalRequestedEvent event = WithdrawalRequestedEvent.newBuilder()
+                .setTransactionId(tx.getUuid())
+                .setUserId(tx.getUserUuid())
+                .setWalletId(tx.getWallet().getUuid())
+                .setAmount(tx.getAmount().setScale(4, RoundingMode.HALF_UP))
+                .setCurrency(tx.getWallet().getWalletType().getCurrencyCode())
+                .setDestination(withdrawal.getPaymentMethodId().toString())
+                .setTimestamp(Instant.now())
+                .build();
         outboxService.save(withdrawalTopic, tx.getUuid().toString(), event);
 
         return tx;

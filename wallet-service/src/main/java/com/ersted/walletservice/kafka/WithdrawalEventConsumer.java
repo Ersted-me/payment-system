@@ -32,16 +32,16 @@ public class WithdrawalEventConsumer {
             @Header(KafkaHeaders.OFFSET) long offset
     ) {
         log.info("Received WithdrawalResultEvent id: [{}] partition: [{}] offset: [{}]",
-                event.transactionId(), partition, offset);
+                event.getTransactionId(), partition, offset);
 
-        if (inboxService.isDuplicate(event.transactionId())) {
-            log.warn("Duplicate WithdrawalResultEvent id: [{}], skipping", event.transactionId());
+        if (inboxService.isDuplicate(event.getTransactionId())) {
+            log.warn("Duplicate WithdrawalResultEvent id: [{}], skipping", event.getTransactionId());
             return;
         }
 
-        inboxService.save(event.transactionId(), WithdrawalResultEvent.class);
+        inboxService.save(event.getTransactionId(), WithdrawalResultEvent.class);
 
-        transactionService.complete(PaymentType.WITHDRAWAL, event.transactionId(), event.status(), event.failureReason());
+        transactionService.complete(PaymentType.WITHDRAWAL, event.getTransactionId(), event.getStatus(), event.getFailureReason());
     }
 
 }

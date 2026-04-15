@@ -24,18 +24,18 @@ spring:
 
   kafka:
     bootstrap-servers: localhost:9092
+    properties:
+      schema.registry.url: http://localhost:8084
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: com.ersted.walletservice.kafka.avro.AvroSchemaRegistrySerializer
 
     consumer:
       group-id: wallet-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "com.ersted.walletservice.dto.kafka"
+      value-deserializer: com.ersted.walletservice.kafka.avro.AvroSchemaRegistryDeserializer
 
   #  security:
 #    oauth2:

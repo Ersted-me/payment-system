@@ -32,15 +32,15 @@ public class DepositEventConsumer {
             @Header(KafkaHeaders.OFFSET) long offset
     ) {
         log.info("Received DepositCompletedEvent id: [{}] partition: [{}] offset: [{}]",
-                event.transactionId(), partition, offset);
+                event.getTransactionId(), partition, offset);
 
-        if (inboxService.isDuplicate(event.transactionId())) {
-            log.warn("Duplicate DepositCompletedEvent id: [{}], skipping", event.transactionId());
+        if (inboxService.isDuplicate(event.getTransactionId())) {
+            log.warn("Duplicate DepositCompletedEvent id: [{}], skipping", event.getTransactionId());
             return;
         }
 
-        inboxService.save(event.transactionId(), DepositCompletedEvent.class);
+        inboxService.save(event.getTransactionId(), DepositCompletedEvent.class);
 
-        transactionService.complete(PaymentType.DEPOSIT, event.transactionId(), event.status(), null);
+        transactionService.complete(PaymentType.DEPOSIT, event.getTransactionId(), event.getStatus(), null);
     }
 }

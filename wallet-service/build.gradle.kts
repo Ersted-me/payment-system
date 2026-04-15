@@ -7,6 +7,7 @@ val versions = mapOf(
 	"lombok-mapstruct-binding" to "0.2.0",
 	"mapstruct-processor" to "1.6.3",
 	"testcontainers" to "1.21.4",
+	"avro" to "1.12.1",
 )
 
 plugins {
@@ -15,6 +16,7 @@ plugins {
 	id("org.springframework.boot") version "4.0.4"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("org.openapi.generator") version "7.20.0"
+	id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
 group = "com.ersted"
@@ -42,6 +44,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 //	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	implementation("org.springframework.boot:spring-boot-kafka")
+	implementation("org.apache.avro:avro:${versions["avro"]}")
 
 	//Observability
 //	implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
@@ -70,9 +73,11 @@ dependencies {
 	// Tests
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 //	testImplementation("org.springframework.security:spring-security-test")
+	testImplementation("org.mockito:mockito-core")
 	testImplementation("org.testcontainers:testcontainers")
 	testImplementation("org.testcontainers:junit-jupiter:${versions["testcontainers"]}")
 	testImplementation("org.testcontainers:postgresql:${versions["testcontainers"]}")
+	testImplementation("org.testcontainers:kafka:${versions["testcontainers"]}")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
 	//	Annotation processor
@@ -118,10 +123,22 @@ openApiGenerate {
 	generateModelDocumentation.set(false)
 }
 
+avro {
+	isCreateSetters.set(true)
+	isCreateOptionalGetters.set(false)
+	isGettersReturnOptional.set(false)
+	isOptionalGettersForNullableFieldsOnly.set(false)
+	fieldVisibility.set("PRIVATE")
+	outputCharacterEncoding.set("UTF-8")
+	stringType.set("String")
+	isEnableDecimalLogicalType.set(true)
+}
+
 sourceSets {
 	main {
 		java {
 			srcDir(layout.buildDirectory.dir("generated/openapi/src/main/java"))
+			srcDir(layout.buildDirectory.dir("generated-main-avro-java"))
 		}
 	}
 }
