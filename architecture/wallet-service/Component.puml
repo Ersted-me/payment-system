@@ -1,0 +1,85 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(wallet_service, "Wallet Service") {
+
+    Component(securityConfig, "SecurityConfig", "Spring Security", "JWT-фильтр: защищает все эндпоинты.\nРазрешает /actuator/health и /swagger-ui/** без токена")
+
+    Component(walletController, "WalletController", "REST Controller", "Обрабатывает HTTP-запросы /v1/wallets:\nсоздание, просмотр кошелька, список по пользователю")
+    Component(transactionController, "TransactionController", "REST Controller", "Обрабатывает HTTP-запросы /v1/transactions:\ninit, confirm, status, поиск")
+
+    Component(walletService, "WalletService", "Service", "Создание кошелька, получение по UUID,\nпросмотр списка кошельков пользователя")
+    Component(transactionService, "TransactionService", "Service", "Оркестрирует транзакции через Strategy.\nПоиск с динамической фильтрацией,\nзавершение транзакции по событию из Kafka")
+
+    Component(depositStrategy, "DepositStrategy", "Strategy", "Расчёт комиссии по депозиту.\nСохраняет транзакцию и DepositRequestedEvent в Outbox")
+    Component(withdrawalStrategy, "WithdrawalStrategy", "Strategy", "Проверка баланса, расчёт комиссии.\nСохраняет транзакцию и WithdrawalRequestedEvent в Outbox")
+    Component(transferStrategy, "TransferStrategy", "Strategy", "Списание у отправителя и зачисление получателю.\nСохраняет транзакции для обоих кошельков")
+
+    Component(outboxService, "OutboxService", "Service", "Сохраняет исходящие события в таблицу OUTBOX\n(Transactional Outbox pattern)")
+    Component(outboxScheduler, "OutboxScheduler", "Scheduled Component", "Периодически читает PENDING-записи из OUTBOX\nи публикует их в Kafka через KafkaTemplate.\nПри ошибке увеличивает retry-счётчик (max=3)")
+
+    Component(depositConsumer, "DepositEventConsumer", "Kafka Listener", "Получает DepositCompletedEvent.\nДедупликация через InboxService.\nЗавершает транзакцию: зачисляет средства или помечает FAILED")
+    Component(withdrawalConsumer, "WithdrawalEventConsumer", "Kafka Listener", "Получает WithdrawalCompletedEvent.\nДедупликация через InboxService.\nЗавершает транзакцию: списывает средства или помечает FAILED")
+    Component(inboxService, "InboxService", "Service", "Idempotent Consumer:\nпроверяет и сохраняет ID обработанных событий")
+
+    Component(walletMapper, "WalletMapper", "MapStruct", "Маппинг Wallet entity → WalletResponse DTO")
+    Component(transactionMapper, "TransactionMapper", "MapStruct", "Маппинг Transaction entity → Response DTO")
+
+    Component(walletRepository, "WalletRepository", "Spring Data JPA", "CRUD-операции над WALLETS")
+    Component(walletTypeRepository, "WalletTypeRepository", "Spring Data JPA", "Поиск типа кошелька по UUID")
+    Component(transactionRepository, "TransactionRepository", "Spring Data JPA", "Сохранение и поиск транзакций.\nДинамическая фильтрация через JPA Specification")
+    Component(outboxRepository, "OutboxMessageRepository", "Spring Data JPA", "Чтение PENDING-сообщений, обновление статуса")
+    Component(inboxRepository, "InboxMessageRepository", "Spring Data JPA", "Проверка наличия и сохранение обработанных событий")
+}
+
+Container_Ext(client, "Клиент", "Внешний сервис", "Обращается к API кошельков и транзакций")
+Container(keycloak, "Keycloak", "OAuth2 / OpenID Connect", "Выпускает JWT-токены.\nПредоставляет публичные ключи (JWKS)")
+Container_Ext(kafka, "Kafka", "Apache Kafka + Schema Registry", "Брокер событий.\nСхемы сериализуются в Avro через Schema Registry")
+ContainerDb(wallet_db, "Wallet Database", "PostgreSQL", "Хранение кошельков, транзакций,\nOutbox и Inbox сообщений")
+
+Rel(client, securityConfig, "Все входящие запросы", "HTTP / Bearer JWT")
+Rel(keycloak, securityConfig, "Публичные ключи для верификации токена", "JWKS")
+Rel(securityConfig, walletController, "")
+Rel(securityConfig, transactionController, "")
+
+Rel(walletController, walletService, "")
+Rel(walletController, walletMapper, "Маппинг ответа")
+Rel(walletService, walletMapper, "")
+Rel(walletService, walletRepository, "")
+Rel(walletService, walletTypeRepository, "Поиск типа кошелька")
+
+Rel(transactionController, transactionService, "")
+Rel(transactionService, depositStrategy, "DEPOSIT")
+Rel(transactionService, withdrawalStrategy, "WITHDRAWAL")
+Rel(transactionService, transferStrategy, "TRANSFER")
+Rel(transactionService, transactionRepository, "Поиск / статус транзакции")
+Rel(transactionService, transactionMapper, "")
+
+Rel(depositStrategy, walletRepository, "Чтение кошелька")
+Rel(depositStrategy, transactionRepository, "Сохранение транзакции")
+Rel(depositStrategy, outboxService, "DepositRequestedEvent")
+Rel(withdrawalStrategy, walletRepository, "Чтение / обновление баланса")
+Rel(withdrawalStrategy, transactionRepository, "Сохранение транзакции")
+Rel(withdrawalStrategy, outboxService, "WithdrawalRequestedEvent")
+Rel(transferStrategy, walletRepository, "Списание / зачисление")
+Rel(transferStrategy, transactionRepository, "Сохранение транзакций")
+
+Rel(outboxService, outboxRepository, "Сохранение события")
+Rel(outboxScheduler, outboxRepository, "Читает PENDING, обновляет статус")
+Rel(outboxScheduler, kafka, "Публикует события", "Avro / Kafka Producer")
+
+Rel(kafka, depositConsumer, "DepositCompletedEvent", "Avro / Kafka Consumer")
+Rel(kafka, withdrawalConsumer, "WithdrawalCompletedEvent", "Avro / Kafka Consumer")
+Rel(depositConsumer, inboxService, "Проверка дубля / сохранение")
+Rel(depositConsumer, transactionService, "complete(DEPOSIT, status)")
+Rel(withdrawalConsumer, inboxService, "Проверка дубля / сохранение")
+Rel(withdrawalConsumer, transactionService, "complete(WITHDRAWAL, status)")
+Rel(inboxService, inboxRepository, "")
+
+Rel(walletRepository, wallet_db, "SQL", "JDBC")
+Rel(walletTypeRepository, wallet_db, "SQL", "JDBC")
+Rel(transactionRepository, wallet_db, "SQL", "JDBC")
+Rel(outboxRepository, wallet_db, "SQL", "JDBC")
+Rel(inboxRepository, wallet_db, "SQL", "JDBC")
+
+@enduml

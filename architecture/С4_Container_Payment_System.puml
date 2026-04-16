@@ -11,6 +11,10 @@ System_Boundary(paymentSystem, "Платёжная система") {
     ContainerDb(keycloak_database, "Keycloak Database", "PostgreSQL", "Хранение учетных данных пользователей Keycloak")
     Container(persons_service, "Persons Service", "Java, Spring Boot", "Управления пользователями и их связанными сущностями")
     ContainerDb(person_database, "Person Database", "PostgreSQL", "Хранение информации по профилям пользователей")
+
+    Container(wallet_service, "Wallet Service", "Java, Spring Boot", "Управление кошельками пользователей, хранение/создание транзакций")
+    ContainerDb(wallet_database, "Wallet Database", "PostgreSQL", "Хранение информации о пользовательских кашельках и транзакциям")
+    Container(kafka, "Kafka", "Kafka", "Асинхронный обмен информации между микросервисами")
 }
 
 Rel(observability, paymentSystem, "Собирает метрики, логи и трейсы", "OTLP gRPC, HTTP, Wire Protocol")
@@ -21,6 +25,9 @@ Rel(keycloak, keycloak_database, "Запись / чтение данных", "SQ
 Rel(individuals_api, persons_service, "Заполнение профиля пользователя", "HTTP")
 Rel(persons_service, person_database, "Запись / чтение данных", "SQL")
 
+Rel(individuals_api, wallet_service, "Создание кошельков, транзакций на ввод, вывод и трансфер средств", "HTTP")
+Rel(wallet_service, wallet_database, "Запись / чтение данных", "SQL")
+Rel(wallet_service, kafka, "Отправка и получение событийных сообщений по транзакциям пополнения и вывода средств с кошелька.")
 
 
 Person(dev, "Разработчик / DevOps", "Следит за состоянием системы")
