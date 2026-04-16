@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -36,6 +37,7 @@ class TransactionControllerTest extends LifecycleSpecification {
         UUID walletUuid = createWallet(UUID.randomUUID());
 
         mockMvc.perform(post("/v1/transactions/DEPOSIT/init")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildDepositRequest(walletUuid, "100.00", 1001L)))
                 .andExpect(status().isOk())
@@ -50,6 +52,7 @@ class TransactionControllerTest extends LifecycleSpecification {
         UUID walletUuid = createWallet(userUuid);
 
         mockMvc.perform(post("/v1/transactions/DEPOSIT/confirm")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildDepositRequest(walletUuid, "200.00", 1002L)))
                 .andExpect(status().isOk())
@@ -64,6 +67,7 @@ class TransactionControllerTest extends LifecycleSpecification {
         UUID walletUuid = createWalletWithBalance(userUuid, new BigDecimal("500.00"));
 
         mockMvc.perform(post("/v1/transactions/WITHDRAWAL/init")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildWithdrawalRequest(walletUuid, "100.00", 2001L)))
                 .andExpect(status().isOk())
@@ -76,9 +80,10 @@ class TransactionControllerTest extends LifecycleSpecification {
         UUID walletUuid = createWallet(UUID.randomUUID());
 
         mockMvc.perform(post("/v1/transactions/WITHDRAWAL/confirm")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildWithdrawalRequest(walletUuid, "100.00", 2002L)))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -86,6 +91,7 @@ class TransactionControllerTest extends LifecycleSpecification {
         UUID walletUuid = createWallet(UUID.randomUUID());
 
         String responseBody = mockMvc.perform(post("/v1/transactions/DEPOSIT/confirm")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildDepositRequest(walletUuid, "50.00", 3001L)))
                 .andExpect(status().isOk())
@@ -95,7 +101,8 @@ class TransactionControllerTest extends LifecycleSpecification {
 
         String transactionUuid = extractField(responseBody, "uid");
 
-        mockMvc.perform(get("/v1/transactions/{transactionUuid}/status", transactionUuid))
+        mockMvc.perform(get("/v1/transactions/{transactionUuid}/status", transactionUuid)
+                        .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PENDING"));
     }
@@ -104,8 +111,9 @@ class TransactionControllerTest extends LifecycleSpecification {
     void shouldGetTransactionStatusNotFound() throws Exception {
         UUID randomUuid = UUID.randomUUID();
 
-        mockMvc.perform(get("/v1/transactions/{transactionUuid}/status", randomUuid))
-                .andExpect(status().isInternalServerError());
+        mockMvc.perform(get("/v1/transactions/{transactionUuid}/status", randomUuid)
+                        .with(jwt()))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -114,11 +122,13 @@ class TransactionControllerTest extends LifecycleSpecification {
         UUID walletUuid = createWallet(userUuid);
 
         mockMvc.perform(post("/v1/transactions/DEPOSIT/confirm")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildDepositRequest(walletUuid, "75.00", 4001L)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/v1/transactions")
+                        .with(jwt())
                         .param("userUid", userUuid.toString())
                         .param("page", "0")
                         .param("size", "10"))
@@ -129,6 +139,7 @@ class TransactionControllerTest extends LifecycleSpecification {
     @Test
     void shouldReturnEmptyTransactionListForUnknownUser() throws Exception {
         mockMvc.perform(get("/v1/transactions")
+                        .with(jwt())
                         .param("userUid", UUID.randomUUID().toString())
                         .param("page", "0")
                         .param("size", "10"))
@@ -144,6 +155,7 @@ class TransactionControllerTest extends LifecycleSpecification {
         UUID targetWallet = createWallet(userB);
 
         mockMvc.perform(post("/v1/transactions/TRANSFER/confirm")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildTransferRequest(sourceWallet, targetWallet, "100.00")))
                 .andExpect(status().isOk())
@@ -154,6 +166,7 @@ class TransactionControllerTest extends LifecycleSpecification {
 
     private UUID createWallet(UUID userUuid) throws Exception {
         String location = mockMvc.perform(post("/v1/wallets")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildCreateWalletRequest(userUuid, walletTypeUid, "Test Wallet")))
                 .andExpect(status().isCreated())
@@ -161,8 +174,7 @@ class TransactionControllerTest extends LifecycleSpecification {
                 .getResponse()
                 .getHeader("Location");
 
-        UUID walletUuid = UUID.fromString(location.substring(location.lastIndexOf('/') + 1));
-        return walletUuid;
+        return UUID.fromString(location.substring(location.lastIndexOf('/') + 1));
     }
 
     private UUID createWalletWithBalance(UUID userUuid, BigDecimal balance) throws Exception {

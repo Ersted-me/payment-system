@@ -42,7 +42,7 @@ dependencyManagement {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-//	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	implementation("org.springframework.boot:spring-boot-kafka")
 	implementation("org.apache.avro:avro:${versions["avro"]}")
 
@@ -72,7 +72,7 @@ dependencies {
 
 	// Tests
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-//	testImplementation("org.springframework.security:spring-security-test")
+	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("org.mockito:mockito-core")
 	testImplementation("org.testcontainers:testcontainers")
 	testImplementation("org.testcontainers:junit-jupiter:${versions["testcontainers"]}")

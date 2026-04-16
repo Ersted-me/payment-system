@@ -1,7 +1,7 @@
 fee:
-  deposit: 0.0
-  withdrawal: 0.015
-  transfer: 0.01
+  deposit: ${FEE_DEPOSIT:0.0}
+  withdrawal: ${FEE_WITHDRAWAL:0.015}
+  transfer: ${FEE_TRANSFER:0.01}
 
 kafka:
   topics:
@@ -14,7 +14,7 @@ kafka:
 
 outbox:
   scheduler:
-    fixed-delay-ms: 5000
+    fixed-delay-ms: ${OUTBOX_SCHEDULER_FIXED_DELAY_MS:5000}
 
 spring:
   application:
@@ -23,9 +23,9 @@ spring:
     banner-mode: off
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
     properties:
-      schema.registry.url: http://localhost:8084
+      schema.registry.url: ${SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL}
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -37,11 +37,11 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: com.ersted.walletservice.kafka.avro.AvroSchemaRegistryDeserializer
 
-  #  security:
-#    oauth2:
-#      resourceserver:
-#        jwt:
-#          issuer-uri: ${OAUTH2_ISSUER_URI}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI}
 
   datasource:
     url: ${DATABASE_URL}

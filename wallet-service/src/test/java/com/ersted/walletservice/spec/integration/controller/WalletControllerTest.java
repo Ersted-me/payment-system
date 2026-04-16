@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 
 import java.util.UUID;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,6 +31,7 @@ class WalletControllerTest extends LifecycleSpecification {
         UUID userUuid = UUID.randomUUID();
 
         mockMvc.perform(post("/v1/wallets")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildCreateWalletRequest(userUuid, walletTypeUid, "Test Wallet")))
                 .andExpect(status().isCreated())
@@ -46,9 +48,10 @@ class WalletControllerTest extends LifecycleSpecification {
         UUID unknownTypeUid = UUID.randomUUID();
 
         mockMvc.perform(post("/v1/wallets")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildCreateWalletRequest(UUID.randomUUID(), unknownTypeUid, "Test Wallet")))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -56,6 +59,7 @@ class WalletControllerTest extends LifecycleSpecification {
         UUID userUuid = UUID.randomUUID();
 
         String location = mockMvc.perform(post("/v1/wallets")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildCreateWalletRequest(userUuid, walletTypeUid, "Info Wallet")))
                 .andExpect(status().isCreated())
@@ -65,7 +69,8 @@ class WalletControllerTest extends LifecycleSpecification {
 
         String walletUuid = extractUuidFromLocation(location);
 
-        mockMvc.perform(get("/v1/wallets/{walletUuid}", walletUuid))
+        mockMvc.perform(get("/v1/wallets/{walletUuid}", walletUuid)
+                        .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uuid").value(walletUuid))
                 .andExpect(jsonPath("$.name").value("Info Wallet"))
@@ -76,8 +81,9 @@ class WalletControllerTest extends LifecycleSpecification {
     void shouldGetWalletInfoNotFound() throws Exception {
         UUID randomUuid = UUID.randomUUID();
 
-        mockMvc.perform(get("/v1/wallets/{walletUuid}", randomUuid))
-                .andExpect(status().isInternalServerError());
+        mockMvc.perform(get("/v1/wallets/{walletUuid}", randomUuid)
+                        .with(jwt()))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -85,16 +91,19 @@ class WalletControllerTest extends LifecycleSpecification {
         UUID userUuid = UUID.randomUUID();
 
         mockMvc.perform(post("/v1/wallets")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildCreateWalletRequest(userUuid, walletTypeUid, "Wallet One")))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/v1/wallets")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(buildCreateWalletRequest(userUuid, walletTypeUid, "Wallet Two")))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/v1/wallets/user/{userUuid}", userUuid))
+        mockMvc.perform(get("/v1/wallets/user/{userUuid}", userUuid)
+                        .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
     }
@@ -103,7 +112,8 @@ class WalletControllerTest extends LifecycleSpecification {
     void shouldReturnEmptyListWhenNoWalletsForUser() throws Exception {
         UUID userUuid = UUID.randomUUID();
 
-        mockMvc.perform(get("/v1/wallets/user/{userUuid}", userUuid))
+        mockMvc.perform(get("/v1/wallets/user/{userUuid}", userUuid)
+                        .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }

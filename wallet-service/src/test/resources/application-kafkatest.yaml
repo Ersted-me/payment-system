@@ -3,6 +3,13 @@ outbox:
     fixed-delay-ms: 86400000
 
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://test-issuer.example.com
+          jwk-set-uri: https://test-issuer.example.com/oauth2/jwks
+
   kafka:
     properties:
       schema.registry.url: mock://test
