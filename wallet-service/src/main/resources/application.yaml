@@ -1,0 +1,106 @@
+fee:
+  deposit: ${FEE_DEPOSIT:0.0}
+  withdrawal: ${FEE_WITHDRAWAL:0.015}
+  transfer: ${FEE_TRANSFER:0.01}
+
+kafka:
+  topics:
+    producer:
+      deposit: deposit-producer-event
+      withdrawal: withdrawal-producer-event
+    consumer:
+      deposit: deposit-consumer-event
+      withdrawal: withdrawal-consumer-event
+
+outbox:
+  scheduler:
+    fixed-delay-ms: ${OUTBOX_SCHEDULER_FIXED_DELAY_MS:5000}
+
+spring:
+  application:
+    name: wallet-service
+  main:
+    banner-mode: off
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+    properties:
+      schema.registry.url: ${SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: com.ersted.walletservice.kafka.avro.AvroSchemaRegistrySerializer
+
+    consumer:
+      group-id: wallet-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: com.ersted.walletservice.kafka.avro.AvroSchemaRegistryDeserializer
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI}
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30_000
+      max-lifetime: 1_800_000
+      pool-name: person-service-hikari-pool
+
+  flyway:
+    locations: classpath:db/migration
+    default-schema: wallet
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+
+
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health, info, metrics, prometheus
+#        exclude: env, beans
+#
+#  prometheus:
+#    metrics:
+#      export:
+#        enabled: true
+#  metrics:
+#    tags:
+#      application: ${spring.application.name}
+#    distribution:
+#      percentiles-histogram:
+#        http.server.requests: true
+#    enable:
+#      http: true
+#
+#  tracing:
+#    sampling:
+#      probability: 1.0
+#
+#  opentelemetry:
+#    tracing:
+#      export:
+#        otlp:
+#          endpoint: ${OTLP_TRACING_GRPC_ENDPOINT:http://localhost:4317}
+#          transport: grpc
+#  logging:
+#    export:
+#      otlp:
+#        enabled: false
+#  otlp:
+#    metrics:
+#      export:
+#        enabled: false

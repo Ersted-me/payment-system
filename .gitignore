@@ -1,0 +1,53 @@
+# ===== Gradle =====
+.gradle/
+**/build/
+gradle/
+gradlew
+gradlew.bat
+gradle.properties
+!**/src/main/**/build/
+!**/src/test/**/build/
+.gitattributes
+# Keep gradle wrapper jar (needed to bootstrap builds)
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# ===== Environment / Secrets =====
+.env
+.env.*
+*.env
+
+# ===== IntelliJ IDEA =====
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# ===== Spring Boot / STS =====
+HELP.md
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# ===== NetBeans =====
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# ===== VS Code =====
+.vscode/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db

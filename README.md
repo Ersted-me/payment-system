@@ -8,30 +8,36 @@
 |--------|----------|---------|
 | [`individuals-api`](./individuals-api/README.md) | Реактивный REST API — регистрация, аутентификация, управление токенами | [`individuals-api.yaml`](./individuals-api/openapi/individuals-api.yaml) |
 | [`person-service`](./person-service/README.md) | Хранение и управление профилями физических лиц | [`person-service-api.yaml`](./person-service/openapi/person-service-api.yaml) |
+| [`wallet-service`](./wallet-service/README.md) | Кошельки и транзакции (DEPOSIT / WITHDRAWAL / TRANSFER) с асинхронной финализацией через Kafka | [`wallet-service-api.yaml`](./wallet-service/openapi/wallet-service-api.yaml) |
 
 ## Архитектура
 
 ```
-                          ┌─────────────────┐
-                          │   individuals   │
-              ┌───────────│      api        │◄──────────┐
-              │           │   :8081         │           │
-              │           └────────┬────────┘           │
-       individuals-api             │                  Client
-              │           ┌────────▼────────┐
-              │           │    Keycloak     │
-              │           │    :8080        │
-              │           └─────────────────┘
-              │
-              │           ┌─────────────────┐
-              └──────────►│  person-service │
-                          │    :8083        │
-                          └────────┬────────┘
-                                   │
-                          ┌────────▼────────┐
-                          │   PostgreSQL    │
-                          │    :5434        │
-                          └─────────────────┘
+                                    Client
+                                      │
+                          ┌───────────▼─────────────┐
+                          │      individuals-api     │
+                          │         :8081            │
+                          └──┬────────────────┬──────┘
+                             │                │
+                    ┌────────▼───────┐  ┌─────▼────────┐
+                    │   Keycloak     │  │ person-service│
+                    │   :8080        │  │   :8083       │
+                    └────────────────┘  └──────┬────────┘
+                                               │ PostgreSQL :5434
+                    JWT (Keycloak)
+                          │
+                          │         Client
+                          │           │
+                          │ ┌─────────▼─────────┐
+                          └─│   wallet-service   │
+                            │      :8084         │
+                            └──┬─────────────┬───┘
+                               │             │
+                    ┌──────────▼──┐  ┌───────▼────────┐
+                    │ PostgreSQL  │  │  Kafka +        │
+                    │   :5435     │  │  Schema Registry│
+                    └─────────────┘  └─────────────────┘
 ```
 
 Стек наблюдаемости: все сервисы отправляют трейсы (OTLP gRPC) и метрики (Prometheus) в **Grafana Alloy**, который маршрутизирует их в Tempo, Prometheus и Loki. Grafana предоставляет единый интерфейс визуализации.
@@ -68,6 +74,7 @@ make observability
 |--------|-----|----------------|
 | Individuals API | http://localhost:8081 | JWT |
 | Person Service | http://localhost:8083 | JWT |
+| Wallet Service | http://localhost:8084 | JWT |
 | Keycloak Admin | http://localhost:8080 | admin / admin |
 | Nexus | http://localhost:8082 | admin / admin |
 | Grafana | http://localhost:3000 | admin / admin |
