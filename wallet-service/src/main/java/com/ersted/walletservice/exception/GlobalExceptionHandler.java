@@ -13,8 +13,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleApiException(ApiException ex) {
         ErrorResponse response = new ErrorResponse();
         response.setError(ex.getMessage());
-        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        response.setStatus(HttpStatus.BAD_REQUEST.getReasonPhrase());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     @ExceptionHandler(Exception.class)
